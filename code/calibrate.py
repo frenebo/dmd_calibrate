@@ -54,8 +54,9 @@ class Calibrator:
         Image.fromarray(background).save("blue_pixels.jpg")
 
     def blank_display(self):
-        image_2d = np.zeros((self.slm_height, self.slm_width), dtype=np.uint8)
-        self.display_image(image_2d)
+        print("Unimplemented")
+        # image_2d = np.zeros((self.slm_height, self.slm_width), dtype=np.uint8)
+        # self.display_image(image_2d)
 
     def capture_blue_pixels(self):
         # perform capture
