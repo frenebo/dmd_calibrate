@@ -197,7 +197,12 @@ if __name__ == "__main__":
 
     # with Bridge() as bridge:
     calibrator = Calibrator(pi_camera)
-    calibrator.calibrate()
+    try:
+        calibrator.calibrate()
+    except:
+        pass
+    if calibrator.running_feh:
+        subprocess.call("pkill feh")
         # calibrate_display(bridge)
 
 
