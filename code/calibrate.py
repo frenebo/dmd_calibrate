@@ -51,7 +51,7 @@ class Calibrator:
     def map_grid(self):
         self.blank_display()
         background = self.capture_blue_pixels()
-        background = (background * np.iinfo(np.uint8.max).astype(np.uint8)
+        background = (background * np.iinfo(np.uint8).max).astype(np.uint8)
 
 
         Image.fromarray(background, "L").save("blue_pixels.jpg")
