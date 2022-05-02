@@ -33,6 +33,9 @@ class Calibrator:
 
         # camera.awb_mode = "off"
         # camera.awb_gains = awb_gains
+        camera.iso=100
+        camera.framerate=1
+        camera.exposure_speed= 10*1000
 
         self.camera = camera
 
