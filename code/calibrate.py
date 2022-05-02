@@ -51,9 +51,9 @@ class Calibrator:
     def map_grid(self):
         self.blank_display()
         background = self.capture_blue_pixels()
-        print("Average brightness:".format(np.mean(background)))
-        print("Max brightness:".format(np.max(background)))
-        print("Min brightness:".format(np.min(background)))
+        print("Average brightness: {}".format(np.mean(background)))
+        print("Max brightness: {}".format(np.max(background)))
+        print("Min brightness: {}".format(np.min(background)))
         background = (background * np.iinfo(np.uint8).max).astype(np.uint8)
 
 
