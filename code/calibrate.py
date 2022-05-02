@@ -4,6 +4,7 @@ import picamerax
 import picamerax.array
 import cv2
 from PIL import Image
+import subprocess
 
 # def read_camera():
 #     return black_and_white_image
@@ -56,7 +57,12 @@ class Calibrator:
 
 
 
+        # Set up second display settings
+        self.dmd_display_dims = (1280,800)
+        self.first_display_dims = (1920,1080)
 
+        self.image_save_path = "display_img_temp.jpg"
+        self.running_feh = False
         # Set up DMD
 
         # self.core = bridge.get_core()
@@ -82,9 +88,32 @@ class Calibrator:
         Image.fromarray(background, "L").save("blue_pixels.jpg")
 
     def blank_display(self):
-        print("Unimplemented")
-        # image_2d = np.zeros((self.slm_height, self.slm_width), dtype=np.uint8)
-        # self.display_image(image_2d)
+        width,height = self.dmd_display_dims
+        image_2d = np.zeros((height,width),dtype=np.uint8)
+        self.display_image(image_2d)
+        # print("Unimplemented")
+        # # image_2d = np.zeros((self.slm_height, self.slm_width), dtype=np.uint8)
+        # # self.display_image(image_2d)
+
+    def display_image(self, image_arr):
+        if running_feh:
+            subprocess.call("pkill feh")
+
+        first_display_w, first_display_h = self.first_display_dims
+        dmd_w, dmd_h = self.dmd_display_dims
+        assert image_arr.shape == (display_h, display_w), "Image array should be 2D, dimensions (height,width)"
+
+        Image.fromarray(image_arr, "L").save(self.image_save_path)
+
+
+        subprocess.call("feh --geometry {width}x{height}+{xoffset}+{yoffset} --borderless {image} &".format(
+            width=display_w,
+            height=display_h,
+            xoffset=first_display_w,
+            yoffset=0
+            image=self.image_save_path
+        ), shell=True)
+        self.running_feh = True
 
     def capture_blue_pixels(self):
         # perform capture
