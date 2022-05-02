@@ -73,7 +73,7 @@ class Calibrator:
         float_arr[float_arr > 1] = 1
         float_arr[float_arr < 0] = 0
 
-        blue_pixels_normalized = ( rgb * np.iinfo(np.uint16).max ).astype(np.uint16)
+        blue_pixels_normalized = ( float_arr * np.iinfo(np.uint16).max ).astype(np.uint16)
 
         return blue_pixels_normalized
 
