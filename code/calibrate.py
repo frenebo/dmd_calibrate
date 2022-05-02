@@ -54,6 +54,8 @@ class Calibrator:
         print("Average brightness: {}".format(np.mean(background)))
         print("Max brightness: {}".format(np.max(background)))
         print("Min brightness: {}".format(np.min(background)))
+        background -= np.min(background)
+        background /= np.max(background)
         background = (background * np.iinfo(np.uint8).max).astype(np.uint8)
 
 
