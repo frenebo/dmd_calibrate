@@ -5,27 +5,27 @@ import picamerax.array
 import cv2
 
 
-def read_camera():
-    return black_and_white_image
+# def read_camera():
+#     return black_and_white_image
 
-def display_image(core, slm_name, np_arr):
-    core.set_slm_image(slm_name, np_arr.flatten())
-    core.display_slm_image(slm_name)
+# def display_image(core, slm_name, np_arr):
+#     core.set_slm_image(slm_name, np_arr.flatten())
+#     core.display_slm_image(slm_name)
 
-def calibrate_display():
-    with Bridge() as bridge:
-        core = bridge.get_core()
-        slm_name = core.get_slm_device()
+# def calibrate_display():
+#     with Bridge() as bridge:
+#         core = bridge.get_core()
+#         slm_name = core.get_slm_device()
 
-        width = core.get_slm_width(slm_name)
-        height = core.get_slm_height(slm_name)
+#         width = core.get_slm_width(slm_name)
+#         height = core.get_slm_height(slm_name)
 
-        image_2d = np.zeros((height,width), dtype=np.uint8)
-        image_2d[0:height//2,0:width//2] = 255
-        display_image(core, slm_name, image_2d)
+#         image_2d = np.zeros((height,width), dtype=np.uint8)
+#         image_2d[0:height//2,0:width//2] = 255
+#         display_image(core, slm_name, image_2d)
 
 class Calibrator:
-    def __init__(self, bridge, camera):
+    def __init__(self, camera):
         # Set up camera
         # awb_gains = camera.awb_gains
         # print("AWB gains: {}", awb_gains)
@@ -38,11 +38,11 @@ class Calibrator:
 
         # Set up DMD
 
-        self.core = bridge.get_core()
-        self.slm_name = self.core.get_slm_device()
+        # self.core = bridge.get_core()
+        # self.slm_name = self.core.get_slm_device()
 
-        self.slm_width = self.core.get_slm_width(self.slm_name)
-        self.slm_height = self.core.get_slm_height(self.slm_name)
+        # self.slm_width = self.core.get_slm_width(self.slm_name)
+        # self.slm_height = self.core.get_slm_height(self.slm_name)
 
     def calibrate(self):
         self.map_grid()
@@ -116,21 +116,21 @@ class Calibrator:
 
 
 
-    def display_image(self, image_arr):
-        w,h = image_arr.shape
-        assert image_arr.dtype == np.uint8, "Image array type is uint8"
-        assert w == self.slm_width, "Image width matches slm"
-        assert h == self.slm_height, "Image width matches"
+    # def display_image(self, image_arr):
+    #     w,h = image_arr.shape
+    #     assert image_arr.dtype == np.uint8, "Image array type is uint8"
+    #     assert w == self.slm_width, "Image width matches slm"
+    #     assert h == self.slm_height, "Image width matches"
 
-        core.set_slm_image(self.slm_name, image_arr.flatten())
+    #     core.set_slm_image(self.slm_name, image_arr.flatten())
 
 if __name__ == "__main__":
 
     camera = picamerax.PiCamera()
 
-    with Bridge() as bridge:
-        calibrator = Calibrator(bridge, camera)
-        calibrator.calibrate()
+    # with Bridge() as bridge:
+    calibrator = Calibrator(camera)
+    calibrator.calibrate()
         # calibrate_display(bridge)
 
 
