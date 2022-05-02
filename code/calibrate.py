@@ -41,7 +41,7 @@ class Calibrator:
         # Set ISO to the desired value
         camera.iso = 100
         # Wait for the automatic gain control to settle
-        sleep(2)
+        sleep(5)
         # Now fix the values
         camera.shutter_speed = camera.exposure_speed
         camera.exposure_mode = 'off'
