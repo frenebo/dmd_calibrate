@@ -49,8 +49,7 @@ class Calibrator:
         g = camera.awb_gains
         camera.awb_mode = 'off'
         camera.awb_gains = g
-        print("AWB gains:",g)
-        print("Shutter speed:", camera.exposure_speed)
+        # print("AWB gains:",g)
         # # Finally, take several photos with the fixed settings
         # camera.capture_sequence(['image%02d.jpg' % i for i in range(10)])
 
@@ -164,10 +163,10 @@ class Calibrator:
 
 if __name__ == "__main__":
 
-    camera = picamerax.PiCamera()
+    pi_camera = picamerax.PiCamera()
 
     # with Bridge() as bridge:
-    calibrator = Calibrator(camera)
+    calibrator = Calibrator(pi_camera)
     calibrator.calibrate()
         # calibrate_display(bridge)
 
