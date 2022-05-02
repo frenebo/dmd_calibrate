@@ -97,7 +97,7 @@ class Calibrator:
 
     def display_image(self, image_arr):
         if self.running_feh:
-            subprocess.call("pkill feh")
+            subprocess.call("pkill feh", shell=True)
             self.running_feh = False
 
         first_display_w, first_display_h = self.first_display_dims
@@ -202,7 +202,7 @@ if __name__ == "__main__":
     except:
         pass
     if calibrator.running_feh:
-        subprocess.call("pkill feh")
+        subprocess.call("pkill feh", shell=True)
         # calibrate_display(bridge)
 
 
