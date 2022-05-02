@@ -3,6 +3,7 @@ from time import sleep
 import picamerax
 import picamerax.array
 import cv2
+from PIL import Image
 
 
 # def read_camera():
