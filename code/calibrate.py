@@ -102,7 +102,7 @@ class Calibrator:
 
         first_display_w, first_display_h = self.first_display_dims
         dmd_w, dmd_h = self.dmd_display_dims
-        assert image_arr.shape == (display_h, display_w), "Image array should be 2D, dimensions (height,width)"
+        assert image_arr.shape == (dmd_h, dmd_w), "Image array should be 2D, dimensions (height,width)"
 
         Image.fromarray(image_arr, "L").save(self.image_save_path)
 
