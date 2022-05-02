@@ -91,6 +91,7 @@ class Calibrator:
         # perform capture
         stream = picamerax.array.PiBayerArray(self.camera)
         self.camera.capture(stream, "jpeg", bayer=True)
+        print("Shutter speed:", self.camera.exposure_speed)
         # get raw Bayer data
         bayer_output_bggr = np.sum(stream.array, axis=2).astype(np.uint16)
 
