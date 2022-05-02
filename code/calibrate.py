@@ -33,12 +33,29 @@ class Calibrator:
 
         # camera.awb_mode = "off"
         # camera.awb_gains = awb_gains
-        camera.iso=100
-        camera.framerate=0.25
-        camera.shutter_speed= 1000*1000
-        print("Exposure speed: ", camera.exposure_speed)
+        # camera.iso=100
+        # camera.framerate=0.25
+        # camera.shutter_speed= 1000*1000
+        # print("Exposure speed: ", camera.exposure_speed)
+
+        # Set ISO to the desired value
+        camera.iso = 100
+        # Wait for the automatic gain control to settle
+        sleep(2)
+        # Now fix the values
+        camera.shutter_speed = camera.exposure_speed
+        camera.exposure_mode = 'off'
+        g = camera.awb_gains
+        camera.awb_mode = 'off'
+        camera.awb_gains = g
+        print("AWB gains:",g)
+        print("Shutter speed:", camera.exposure_speed)
+        # # Finally, take several photos with the fixed settings
+        # camera.capture_sequence(['image%02d.jpg' % i for i in range(10)])
 
         self.camera = camera
+
+
 
 
         # Set up DMD
