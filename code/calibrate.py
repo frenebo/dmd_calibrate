@@ -99,11 +99,6 @@ class Calibrator:
 
         self.stop_feh()
 
-    def blank_display(self):
-        # print("Unimplemented")
-        # # image_2d = np.zeros((self.slm_height, self.slm_width), dtype=np.uint8)
-        # # self.display_image(image_2d)
-
     def display_image(self, image_arr):
         if self.running_feh:
             self.stop_feh()
