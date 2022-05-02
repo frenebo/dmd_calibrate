@@ -51,8 +51,10 @@ class Calibrator:
     def map_grid(self):
         self.blank_display()
         background = self.capture_blue_pixels()
+        background = (background * np.iinfo(np.uint8.max).astype(np.uint8)
 
-        Image.fromarray(background).save("blue_pixels.jpg")
+
+        Image.fromarray(background, "L").save("blue_pixels.jpg")
 
     def blank_display(self):
         print("Unimplemented")
@@ -74,9 +76,11 @@ class Calibrator:
         float_arr[float_arr > 1] = 1
         float_arr[float_arr < 0] = 0
 
-        blue_pixels_normalized = ( float_arr * np.iinfo(np.uint16).max ).astype(np.uint16)
+        return float_arr
 
-        return blue_pixels_normalized
+        # blue_pixels_normalized = ( float_arr * np.iinfo(np.uint16).max ).astype(np.uint16)
+
+        # return blue_pixels_normalized
 
 
 
