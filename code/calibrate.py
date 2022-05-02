@@ -5,7 +5,6 @@ import picamerax.array
 import cv2
 from PIL import Image
 
-
 # def read_camera():
 #     return black_and_white_image
 
@@ -34,7 +33,7 @@ class Calibrator:
         # camera.awb_mode = "off"
         # camera.awb_gains = awb_gains
         # camera.iso=100
-        camera.framerate=2
+        camera.framerate=1
         # camera.shutter_speed= 1000*1000
         # print("Exposure speed: ", camera.exposure_speed)
 
@@ -43,7 +42,7 @@ class Calibrator:
         # Wait for the automatic gain control to settle
         sleep(5)
         # Now fix the values
-        camera.shutter_speed = 300000
+        camera.shutter_speed = 900000
         # camera.shutter_speed = camera.exposure_speed
         camera.exposure_mode = 'off'
         g = camera.awb_gains
@@ -91,7 +90,7 @@ class Calibrator:
         # perform capture
         stream = picamerax.array.PiBayerArray(self.camera)
         self.camera.capture(stream, "jpeg", bayer=True)
-        print("Shutter speed:", self.camera.exposure_speed)
+        print("Shutter speed was: ", self.camera.exposure_speed)
         # get raw Bayer data
         bayer_output_bggr = np.sum(stream.array, axis=2).astype(np.uint16)
 
