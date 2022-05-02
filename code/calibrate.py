@@ -87,6 +87,8 @@ class Calibrator:
 
         Image.fromarray(background, "L").save("blue_pixels.jpg")
 
+        self.stop_feh()
+
     def blank_display(self):
         width,height = self.dmd_display_dims
         image_2d = np.zeros((height,width),dtype=np.uint8)
@@ -97,8 +99,7 @@ class Calibrator:
 
     def display_image(self, image_arr):
         if self.running_feh:
-            subprocess.call("pkill feh", shell=True)
-            self.running_feh = False
+            self.stop_feh()
 
         first_display_w, first_display_h = self.first_display_dims
         dmd_w, dmd_h = self.dmd_display_dims
@@ -115,6 +116,13 @@ class Calibrator:
             image=self.image_save_path
         ), shell=True)
         self.running_feh = True
+
+    def stop_feh():
+        if not self.running_feh:
+            print("Warning: killing feh when it's not supposed to be running")
+
+        subprocess.call("pkill feh", shell=True)
+        self.running_feh = False
 
     def capture_blue_pixels(self):
         # perform capture
@@ -202,7 +210,7 @@ if __name__ == "__main__":
     except:
         pass
     if calibrator.running_feh:
-        subprocess.call("pkill feh", shell=True)
+        calibrator.stop_feh()
         # calibrate_display(bridge)
 
 
