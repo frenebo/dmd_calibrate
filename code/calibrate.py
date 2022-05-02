@@ -34,7 +34,7 @@ class Calibrator:
         # camera.awb_mode = "off"
         # camera.awb_gains = awb_gains
         # camera.iso=100
-        camera.framerate=1
+        camera.framerate=10
         # camera.shutter_speed= 1000*1000
         # print("Exposure speed: ", camera.exposure_speed)
 
