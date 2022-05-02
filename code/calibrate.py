@@ -36,6 +36,7 @@ class Calibrator:
         camera.iso=100
         camera.framerate=0.25
         camera.shutter_speed= 1000*1000
+        print("Exposure speed: ", camera.exposure_speed)
 
         self.camera = camera
 
