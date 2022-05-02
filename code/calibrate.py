@@ -117,7 +117,7 @@ class Calibrator:
         ), shell=True)
         self.running_feh = True
 
-    def stop_feh():
+    def stop_feh(self):
         if not self.running_feh:
             print("Warning: killing feh when it's not supposed to be running")
 
