@@ -89,8 +89,8 @@ class Calibrator:
 
     def capture_blue_pixels(self):
         # perform capture
-        stream = picamerax.array.PiBayerArray(camera)
-        camera.capture(stream, "jpeg", bayer=True)
+        stream = picamerax.array.PiBayerArray(self.camera)
+        self.camera.capture(stream, "jpeg", bayer=True)
         # get raw Bayer data
         bayer_output_bggr = np.sum(stream.array, axis=2).astype(np.uint16)
 
