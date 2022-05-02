@@ -96,8 +96,9 @@ class Calibrator:
         # # self.display_image(image_2d)
 
     def display_image(self, image_arr):
-        if running_feh:
+        if self.running_feh:
             subprocess.call("pkill feh")
+            self.running_feh = False
 
         first_display_w, first_display_h = self.first_display_dims
         dmd_w, dmd_h = self.dmd_display_dims
