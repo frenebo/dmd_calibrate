@@ -110,7 +110,7 @@ class Calibrator:
             width=display_w,
             height=display_h,
             xoffset=first_display_w,
-            yoffset=0
+            yoffset=0,
             image=self.image_save_path
         ), shell=True)
         self.running_feh = True
