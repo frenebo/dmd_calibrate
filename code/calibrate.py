@@ -75,24 +75,31 @@ class Calibrator:
         self.map_grid()
 
     def map_grid(self):
-        self.blank_display()
-        background = self.capture_blue_pixels()
-        print("Average brightness: {}".format(np.mean(background)))
-        print("Max brightness: {}".format(np.max(background)))
-        print("Min brightness: {}".format(np.min(background)))
-        background -= np.min(background)
-        background /= np.max(background)
-        background = (background * np.iinfo(np.uint8).max).astype(np.uint8)
+        width,height = self.dmd_display_dims
+
+        black_dmd_img = np.zeros((height,width),dtype=np.uint8)
+        self.display_image(black_dmd_img)
+        black_screen = self.capture_blue_pixels()
+        black_screen = (black_screen * np.iinfo(np.uint8).max).astype(np.uint8)
+        Image.fromarray(black_screen, "L").save("black_screen.jpg")
+
+        white_dmd_img = np.full((height,width),np.iinfo(np.uint8).max,dtype=np.uint8)
+        self.display_image(white_dmd_img)
+        white_screen = self.capture_blue_pixels()
+        white_screen = (white_screen * np.iinfo(np.uint8).max).astype(np.uint8)
+        Image.fromarray(white_screen, "L").save("white_screen.jpg")
+        # print("Average brightness: {}".format(np.mean(background)))
+        # print("Max brightness: {}".format(np.max(background)))
+        # print("Min brightness: {}".format(np.min(background)))
+        # background -= np.min(background)
+        # background /= np.max(background)
+        # background = (background * np.iinfo(np.uint8).max).astype(np.uint8)
 
 
-        Image.fromarray(background, "L").save("blue_pixels.jpg")
 
         self.stop_feh()
 
     def blank_display(self):
-        width,height = self.dmd_display_dims
-        image_2d = np.zeros((height,width),dtype=np.uint8)
-        self.display_image(image_2d)
         # print("Unimplemented")
         # # image_2d = np.zeros((self.slm_height, self.slm_width), dtype=np.uint8)
         # # self.display_image(image_2d)
