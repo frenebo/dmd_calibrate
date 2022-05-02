@@ -108,8 +108,8 @@ class Calibrator:
 
 
         subprocess.call("feh --geometry {width}x{height}+{xoffset}+{yoffset} --borderless {image} &".format(
-            width=display_w,
-            height=display_h,
+            width=dmd_w,
+            height=dmd_h,
             xoffset=first_display_w,
             yoffset=0,
             image=self.image_save_path
