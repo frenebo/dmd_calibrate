@@ -79,6 +79,11 @@ class Calibrator:
         blue_pixels = bayer_output_bggr[::2,::2]
         float_arr = blue_pixels.astype(float)
 
+        pixels_overexposed = (blue_pixels >= 2**12 - 1).sum()
+        # percent
+        if pixels_overexposed != 0:
+            print("{} pixels are overexposed in blue.".format(pixels_overexposed))
+
         # from 12 to 16 bit
         float_arr /= (2**12 - 1)
         float_arr[float_arr > 1] = 1
