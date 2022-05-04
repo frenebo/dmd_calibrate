@@ -91,10 +91,11 @@ class Calibrator:
         dmd_img[x-5:x+5,y-5:y+5] = np.iinfo(np.uint8).max
         self.display_image(dmd_img)
 
-    def save_bw_floats(float_img, fp):
+    def save_bw_floats(self,float_img, fp):
         scaled_img = (float_img * np.iinfo(np.uint8).max).astype(np.uint8)
         # white_screen = (white_screen * np.iinfo(np.uint8).max).astype(np.uint8)
         Image.fromarray(scaled_img, "L").save(fp)
+
     def map_grid(self):
         width,height = self.dmd_display_dims
 
