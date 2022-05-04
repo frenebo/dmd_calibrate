@@ -167,7 +167,7 @@ class Calibrator:
         print("CALLING RASPISTILL")
         subprocess.call("raspistill -md 3 -ex off -awb off -ag 1 -dg 1 -awbg -1.0,1.0 -set -v -ss {} --nopreview -r -o {}".format(exposure_us, temp_image_fp), shell=True)
         print("FINISSHD RASPITSILL")
-        raw_data = np.fromfile(img, dtype=np.uint8)
+        raw_data = np.fromfile(temp_image_fp, dtype=np.uint8)
         camera = RaspberryPiHqCamera(1, CFAPattern.BGGR)
         r = RPICAM2DNG(camera)
         unpacked_bayer = r.__unpack_pixels__(raw_data)
