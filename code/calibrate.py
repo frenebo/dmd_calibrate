@@ -91,12 +91,17 @@ class Calibrator:
         dmd_img[x-5:x+5,y-5:y+5] = np.iinfo(np.uint8).max
         self.display_image(dmd_img)
 
+    def save_bw_floats(float_img, fp):
+        scaled_img = (float_img * np.iinfo(np.uint8).max).astype(np.uint8)
+        # white_screen = (white_screen * np.iinfo(np.uint8).max).astype(np.uint8)
+        Image.fromarray(scaled_img, "L").save(fp)
     def map_grid(self):
         width,height = self.dmd_display_dims
 
         black_dmd_img = np.zeros((height,width),dtype=np.uint8)
         self.display_image(black_dmd_img)
         background_image = self.capture_blue_pixels()
+        self.save_bw_floats(background_image,"back.jpg")
 
         # white_dmd_img = np.full((height,width),np.iinfo(np.uint8).max,dtype=np.uint8)
         # self.display_image(white_dmd_img)
@@ -107,14 +112,15 @@ class Calibrator:
         #     raise Exception("dmd not wide enough to display grid")
         # if height < 100:
         #     raise Exception("dmd not high enough to display grid")
-        # x_points = np.arange(50,width-49,100)
-        # y_points = np.arange(50,height-49,100)
+        x_points = np.arange(50,width-49,100)
+        y_points = np.arange(50,height-49,100)
         # # grid_x_mesh, grid_y = np.meshgrid(x_points, y_points)
         # # for
         for x_pt in x_points:
             for y_pt in y_points:
                 self.white_square_image(x_pt,y_pt,20,width,height)
-                self.capture_blue_pixels()
+                img = self.capture_blue_pixels()
+                self.save_bw_floats(img, "{},{}.jpg".format(x_pt,y_pt))
 
                 break
             break
