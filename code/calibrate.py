@@ -189,7 +189,7 @@ class Calibrator:
         im = np.zeros((3040, 4056), dtype=np.uint16)
         # Unpack the low-order bits from every 3rd byte in each row
         for byte in range(2):
-            im[:, byte::2] = (imdata[:, byte::3] <> (byte * 4)) & 0b1111)
+            im[:, byte::2] = ( (imdata[:, byte::3] << 4) | ((imdata[:, 2::3] >> (byte * 4)) & 0b1111) )
 
         blue_pixels = im[::2,::2]
         float_arr = blue_pixels.astype(float)
