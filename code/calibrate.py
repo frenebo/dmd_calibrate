@@ -7,7 +7,7 @@ from PIL import Image
 import subprocess
 from pidng.core import RPICAM2DNG
 from pidng.camdefs import RaspberryPiHqCamera, CFAPattern
-
+import io
 # def read_camera():
 #     return black_and_white_image
 
@@ -167,10 +167,23 @@ class Calibrator:
         print("CALLING RASPISTILL")
         subprocess.call("raspistill -md 3 -ex off -awb off -ag 1 -dg 1 -awbg -1.0,1.0 -set -v -ss {} --nopreview -r -o {}".format(exposure_us, temp_image_fp), shell=True)
         print("FINISSHD RASPITSILL")
-        raw_data = np.fromfile(temp_image_fp, dtype=np.uint8)
+
+        # Read in the whole binary image tail of the
+        # .jpg file with appended raw image data
+        with open(temp_image_fp, 'rb') as filraw:
+            filraw.seek(-18711040, io.SEEK_END)
+            imbuf = filraw.read()
+            if imbuf[:4] != b'BRCM':
+                print('Binary data start tag BRCM was NOT found at this seek position')
+            else:
+                print('Binary tag data BRCM was found at this seek position')
+
+        # Image data proper starts after 2^15 bytes = 32768
+        imdata = np.frombuffer(imbuf, dtype=np.uint8)[32768:]
+        # raw_data = np.fromfile(temp_image_fp, dtype=np.uint8)
         camera = RaspberryPiHqCamera(3, CFAPattern.BGGR)
         r = RPICAM2DNG(camera)
-        unpacked_bayer = r.__unpack_pixels__(raw_data)
+        unpacked_bayer = r.__unpack_pixels__(imdata)
         print("Unpacked bayer:")
         print(unpacked_bayer.shape)
         print(unpacked_bayer.dtype)
