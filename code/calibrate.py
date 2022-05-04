@@ -5,8 +5,8 @@ from time import sleep
 import cv2
 from PIL import Image
 import subprocess
-from pidng.core import RPICAM2DNG
-from pidng.camdefs import RaspberryPiHqCamera, CFAPattern
+# from pidng.core import RPICAM2DNG
+# from pidng.camdefs import RaspberryPiHqCamera, CFAPattern
 import io
 # def read_camera():
 #     return black_and_white_image
@@ -168,6 +168,8 @@ class Calibrator:
         subprocess.call("raspistill -md 3 -ex off -awb off -ag 1 -dg 1 -awbg -1.0,1.0 -set -v -ss {} --nopreview -r -o {}".format(exposure_us, temp_image_fp), shell=True)
         print("FINISSHD RASPITSILL")
 
+        # Got following from https://www.strollswithmydog.com/open-raspberry-pi-high-quality-camera-raw/#footnote
+
         # Read in the whole binary image tail of the
         # .jpg file with appended raw image data
         with open(temp_image_fp, 'rb') as filraw:
@@ -180,13 +182,41 @@ class Calibrator:
 
         # Image data proper starts after 2^15 bytes = 32768
         imdata = np.frombuffer(imbuf, dtype=np.uint8)[32768:]
+        # Reshape the data to 3056 rows of 6112 bytes each and crop to 3040 rows of 6084 bytes
+        imdata = imdata.reshape((3056, 6112))[:3040, :6084]
+
+        # Make an output 16 bit image
+        im = np.zeros((3040, 4056), dtype=np.uint16)
+        # Unpack the low-order bits from every 3rd byte in each row
+        for byte in range(2):
+            im[:, byte::2] = (imdata[:, byte::3] <> (byte * 4)) & 0b1111)
+
+        blue_pixels = im[::2,::2]
+        float_arr = blue_pixels.astype(float)
+
+        pixels_overexposed = (blue_pixels >= 2**12 - 1).sum()
+        # percent
+        if pixels_overexposed != 0:
+            print("{} pixels are overexposed in blue.".format(pixels_overexposed))
+
+        # from 12 to 16 bit
+        float_arr /= (2**12 - 1)
+        float_arr[float_arr > 1] = 1
+        float_arr[float_arr < 0] = 0
+
+        return float_arr
+
         # raw_data = np.fromfile(temp_image_fp, dtype=np.uint8)
-        camera = RaspberryPiHqCamera(3, CFAPattern.BGGR)
-        r = RPICAM2DNG(camera)
-        unpacked_bayer = r.__unpack_pixels__(imdata)
-        print("Unpacked bayer:")
-        print(unpacked_bayer.shape)
-        print(unpacked_bayer.dtype)
+        # camera = RaspberryPiHqCamera(3, CFAPattern.BGGR)
+
+        # imdata = imdata.astype(np.uint16)
+
+
+        # r = RPICAM2DNG(camera)
+        # unpacked_bayer = r.__unpack_pixels__(imdata)
+        # print("Unpacked bayer:")
+        # print(unpacked_bayer.shape)
+        # print(unpacked_bayer.dtype)
 
         # raise NotImplementedError
 
