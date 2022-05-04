@@ -126,8 +126,6 @@ class Calibrator:
                 img = self.capture_blue_pixels()
                 self.save_bw_floats(img, "{},{}.jpg".format(x_pt,y_pt))
 
-                # break
-            # break
         # x_points = np.linspace()
         # white_screen = self.float_to_
         # white_screen = (white_screen * np.iinfo(np.uint8).max).astype(np.uint8)
@@ -171,7 +169,7 @@ class Calibrator:
         self.running_feh = False
 
     def capture_blue_pixels(self):
-        exposure_seconds = 2
+        exposure_seconds = 4
         exposure_us = exposure_seconds*1000000
         temp_image_fp = "temp_raw.jpg"
 
@@ -214,7 +212,7 @@ class Calibrator:
         pixels_overexposed = (blue_pixels >= 2**12 - 1).sum()
         # percent
         if pixels_overexposed != 0:
-            print("{} pixels are overexposed in blue.".format(pixels_overexposed))
+            print("WARNING: {} pixels are overexposed in blue!".format(pixels_overexposed))
 
         # from 12 to 16 bit
         float_arr /= (2**12 - 1)
