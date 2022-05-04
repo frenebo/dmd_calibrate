@@ -126,8 +126,8 @@ class Calibrator:
                 img = self.capture_blue_pixels()
                 self.save_bw_floats(img, "{},{}.jpg".format(x_pt,y_pt))
 
-                break
-            break
+                # break
+            # break
         # x_points = np.linspace()
         # white_screen = self.float_to_
         # white_screen = (white_screen * np.iinfo(np.uint8).max).astype(np.uint8)
@@ -174,6 +174,7 @@ class Calibrator:
         exposure_seconds = 2
         exposure_us = exposure_seconds*1000000
         temp_image_fp = "temp_raw.jpg"
+
         print("Calling raspistill")
         subprocess.call(
             "raspistill -md 3 -ex off -awb off -ag 1 -dg 1 -awbg -1.0,1.0 -set -v -ss {} --nopreview -r -o {}".format(
@@ -191,8 +192,8 @@ class Calibrator:
             imbuf = filraw.read()
             if imbuf[:4] != b'BRCM':
                 print('Binary data start tag BRCM was NOT found at this seek position')
-            else:
-                print('Binary tag data BRCM was found at this seek position')
+                raise Exception("Couldn't find start tag for the camera raw bayer data. Was the jpeg captured with raw data at the end?")
+
 
         subprocess.call("rm {}".format(temp_image_fp),shell=True)
 
