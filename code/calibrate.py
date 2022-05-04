@@ -5,6 +5,8 @@ import picamerax.array
 import cv2
 from PIL import Image
 import subprocess
+from pidng.core import RPICAM2DNG
+from pidng.camdefs import RaspberryPiHqCamera
 
 # def read_camera():
 #     return black_and_white_image
@@ -26,34 +28,34 @@ import subprocess
 #         display_image(core, slm_name, image_2d)
 
 class Calibrator:
-    def __init__(self, camera):
-        # Set up camera
-        # awb_gains = camera.awb_gains
-        # print("AWB gains: {}", awb_gains)
+    def __init__(self):
+        # # Set up camera
+        # # awb_gains = camera.awb_gains
+        # # print("AWB gains: {}", awb_gains)
 
-        # camera.awb_mode = "off"
-        # camera.awb_gains = awb_gains
-        # camera.iso=100
-        camera.framerate=1
-        # camera.shutter_speed= 1000*1000
-        # print("Exposure speed: ", camera.exposure_speed)
+        # # camera.awb_mode = "off"
+        # # camera.awb_gains = awb_gains
+        # # camera.iso=100
+        # camera.framerate=1
+        # # camera.shutter_speed= 1000*1000
+        # # print("Exposure speed: ", camera.exposure_speed)
 
-        # Set ISO to the desired value
-        camera.exposure_mode = 'off'
-        camera.iso = 100
-        # Wait for the automatic gain control to settle
-        # sleep(5)
-        # Now fix the values
-        camera.shutter_speed = 900000
-        # camera.shutter_speed = camera.exposure_speed
-        # g = camera.awb_gains
-        camera.awb_mode = 'off'
-        # camera.awb_gains = g
-        # print("AWB gains:",g)
-        # # Finally, take several photos with the fixed settings
-        # camera.capture_sequence(['image%02d.jpg' % i for i in range(10)])
+        # # Set ISO to the desired value
+        # camera.exposure_mode = 'off'
+        # camera.iso = 100
+        # # Wait for the automatic gain control to settle
+        # # sleep(5)
+        # # Now fix the values
+        # camera.shutter_speed = 900000
+        # # camera.shutter_speed = camera.exposure_speed
+        # # g = camera.awb_gains
+        # camera.awb_mode = 'off'
+        # # camera.awb_gains = g
+        # # print("AWB gains:",g)
+        # # # Finally, take several photos with the fixed settings
+        # # camera.capture_sequence(['image%02d.jpg' % i for i in range(10)])
 
-        self.camera = camera
+        # self.camera = camera
 
 
 
@@ -159,27 +161,42 @@ class Calibrator:
         self.running_feh = False
 
     def capture_blue_pixels(self):
-        # perform capture
-        stream = picamerax.array.PiBayerArray(self.camera)
-        self.camera.capture(stream, "jpeg", bayer=True)
-        print("Shutter speed was: ", self.camera.exposure_speed)
-        # get raw Bayer data
-        bayer_output_bggr = np.sum(stream.array, axis=2).astype(np.uint16)
+        exposure_seconds = 2
+        exposure_us = exposure_seconds*1000000
+        temp_image_fp = "temp_raw.jpg"
+        subprocess.call("raspistill -md 3 -ex off -awb off -ag 1 -dg 1 -awbg -1.0,1.0 -set -v -ss {} --nopreview -r -o {}".format(exposure_us, temp_image_fp), shell=True)
+        raw_data = np.fromfile(img, dtype=np.uint8)
+        camera = RaspberryPiHqCamera(1, CFAPattern.BGGR)
+        r = RPICAM2DNG(camera)
+        unpacked_bayer = r.__unpack_pixels__(raw_data)
+        print("Unpacked bayer:")
+        print(unpacked_bayer.shape)
+        print(unpacked_bayer.dtype)
 
-        blue_pixels = bayer_output_bggr[::2,::2]
-        float_arr = blue_pixels.astype(float)
+        # raise NotImplementedError
 
-        pixels_overexposed = (blue_pixels >= 2**12 - 1).sum()
-        # percent
-        if pixels_overexposed != 0:
-            print("{} pixels are overexposed in blue.".format(pixels_overexposed))
+    # def capture_blue_pixels(self):
+    #     # perform capture
+    #     stream = picamerax.array.PiBayerArray(self.camera)
+    #     self.camera.capture(stream, "jpeg", bayer=True)
+    #     print("Shutter speed was: ", self.camera.exposure_speed)
+    #     # get raw Bayer data
+    #     bayer_output_bggr = np.sum(stream.array, axis=2).astype(np.uint16)
 
-        # from 12 to 16 bit
-        float_arr /= (2**12 - 1)
-        float_arr[float_arr > 1] = 1
-        float_arr[float_arr < 0] = 0
+    #     blue_pixels = bayer_output_bggr[::2,::2]
+    #     float_arr = blue_pixels.astype(float)
 
-        return float_arr
+    #     pixels_overexposed = (blue_pixels >= 2**12 - 1).sum()
+    #     # percent
+    #     if pixels_overexposed != 0:
+    #         print("{} pixels are overexposed in blue.".format(pixels_overexposed))
+
+    #     # from 12 to 16 bit
+    #     float_arr /= (2**12 - 1)
+    #     float_arr[float_arr > 1] = 1
+    #     float_arr[float_arr < 0] = 0
+
+    #     return float_arr
 
         # blue_pixels_normalized = ( float_arr * np.iinfo(np.uint16).max ).astype(np.uint16)
 
