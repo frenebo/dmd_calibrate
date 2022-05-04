@@ -102,7 +102,9 @@ class Calibrator:
         black_dmd_img = np.zeros((height,width),dtype=np.uint8)
         self.display_image(black_dmd_img)
         background_image = self.capture_blue_pixels()
-        self.save_bw_floats(background_image,"back.jpg")
+        self.save_bw_floats(background_image,"black.jpg")
+        self.display_image(np.ones_like(black_and_white_image)*np.iinfo(np.uint8).max)
+        self.save_bw_floats(self.capture_blue_pixels(), "white.jpg")
 
         # white_dmd_img = np.full((height,width),np.iinfo(np.uint8).max,dtype=np.uint8)
         # self.display_image(white_dmd_img)
