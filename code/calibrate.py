@@ -261,7 +261,9 @@ if __name__ == "__main__":
     try:
         calibrator.calibrate()
     except:
-        pass
+        if calibrator.running_feh:
+            calibrator.stop_feh()
+        raise
     if calibrator.running_feh:
         calibrator.stop_feh()
         # calibrate_display(bridge)
