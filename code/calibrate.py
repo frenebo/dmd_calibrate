@@ -190,6 +190,8 @@ class Calibrator:
             else:
                 print('Binary tag data BRCM was found at this seek position')
 
+        subprocess.call("rm {}".format(temp_image_fp))
+
         # Image data proper starts after 2^15 bytes = 32768
         imdata = np.frombuffer(imbuf, dtype=np.uint8)[32768:]
         # Reshape the data to 3056 rows of 6112 bytes each and crop to 3040 rows of 6084 bytes
