@@ -190,7 +190,7 @@ class Calibrator:
             else:
                 print('Binary tag data BRCM was found at this seek position')
 
-        subprocess.call("rm {}".format(temp_image_fp))
+        subprocess.call("rm {}".format(temp_image_fp),shell=True)
 
         # Image data proper starts after 2^15 bytes = 32768
         imdata = np.frombuffer(imbuf, dtype=np.uint8)[32768:]
