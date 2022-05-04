@@ -6,7 +6,7 @@ import cv2
 from PIL import Image
 import subprocess
 from pidng.core import RPICAM2DNG
-from pidng.camdefs import RaspberryPiHqCamera
+from pidng.camdefs import RaspberryPiHqCamera, CFAPattern
 
 # def read_camera():
 #     return black_and_white_image
