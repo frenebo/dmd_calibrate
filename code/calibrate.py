@@ -39,16 +39,16 @@ class Calibrator:
         # print("Exposure speed: ", camera.exposure_speed)
 
         # Set ISO to the desired value
+        camera.exposure_mode = 'off'
         camera.iso = 100
         # Wait for the automatic gain control to settle
         # sleep(5)
         # Now fix the values
         camera.shutter_speed = 900000
         # camera.shutter_speed = camera.exposure_speed
-        camera.exposure_mode = 'off'
-        g = camera.awb_gains
+        # g = camera.awb_gains
         camera.awb_mode = 'off'
-        camera.awb_gains = g
+        # camera.awb_gains = g
         # print("AWB gains:",g)
         # # Finally, take several photos with the fixed settings
         # camera.capture_sequence(['image%02d.jpg' % i for i in range(10)])
@@ -74,20 +74,52 @@ class Calibrator:
     def calibrate(self):
         self.map_grid()
 
+    def show_square_at(self,x,y):
+        # if x
+        # dmd_img = np.zeros((self))
+        dmd_w, dmd_h = self.dmd_display_dims
+        if x < 5 or y < 5:
+            raise Exception("cant show square at x < 5 or y < 5, not enough space")
+        if x > dmd_w - 5 or y > dmd_h - 5:
+            raise Exception("cant show square at x > {} or y > {}, not enough space".format(dmd_w-5,dmd_h-5))
+
+        dmd_img = np.zeros((dmd_h,dmd_w),dtype=np.uint8)
+
+        # Fill in square
+        dmd_img[x-5:x+5,y-5:y+5] = np.iinfo(np.uint8).max
+        self.display_image(dmd_img)
+
     def map_grid(self):
         width,height = self.dmd_display_dims
 
         black_dmd_img = np.zeros((height,width),dtype=np.uint8)
         self.display_image(black_dmd_img)
-        black_screen = self.capture_blue_pixels()
-        black_screen = (black_screen * np.iinfo(np.uint8).max).astype(np.uint8)
-        Image.fromarray(black_screen, "L").save("black_screen.jpg")
+        background_image = self.capture_blue_pixels()
 
-        white_dmd_img = np.full((height,width),np.iinfo(np.uint8).max,dtype=np.uint8)
-        self.display_image(white_dmd_img)
-        white_screen = self.capture_blue_pixels()
-        white_screen = (white_screen * np.iinfo(np.uint8).max).astype(np.uint8)
-        Image.fromarray(white_screen, "L").save("white_screen.jpg")
+        # white_dmd_img = np.full((height,width),np.iinfo(np.uint8).max,dtype=np.uint8)
+        # self.display_image(white_dmd_img)
+        # white_screen = self.capture_blue_pixels()
+
+        # # point_num = width//
+        # if width < 100:
+        #     raise Exception("dmd not wide enough to display grid")
+        # if height < 100:
+        #     raise Exception("dmd not high enough to display grid")
+        # x_points = np.arange(50,width-49,100)
+        # y_points = np.arange(50,height-49,100)
+        # # grid_x_mesh, grid_y = np.meshgrid(x_points, y_points)
+        # # for
+        for x_pt in x_points:
+            for y_pt in y_points:
+                self.white_square_image(x_pt,y_pt,20,width,height)
+                self.capture_blue_pixels()
+
+                break
+            break
+        # x_points = np.linspace()
+        # white_screen = self.float_to_
+        # white_screen = (white_screen * np.iinfo(np.uint8).max).astype(np.uint8)
+        # Image.fromarray(white_screen, "L").save("white_screen.jpg")
         # print("Average brightness: {}".format(np.mean(background)))
         # print("Max brightness: {}".format(np.max(background)))
         # print("Min brightness: {}".format(np.min(background)))
