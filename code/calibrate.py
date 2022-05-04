@@ -119,7 +119,8 @@ class Calibrator:
         # # for
         for x_pt in x_points:
             for y_pt in y_points:
-                self.white_square_image(x_pt,y_pt,20,width,height)
+                self.show_square_at(x_pt,y_pt)
+                # self.white_square_image(x_pt,y_pt,20,width,height)
                 img = self.capture_blue_pixels()
                 self.save_bw_floats(img, "{},{}.jpg".format(x_pt,y_pt))
 
