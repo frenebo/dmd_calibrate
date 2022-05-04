@@ -1,7 +1,7 @@
 import numpy as np
 from time import sleep
-import picamerax
-import picamerax.array
+# import picamerax
+# import picamerax.array
 import cv2
 from PIL import Image
 import subprocess
@@ -252,10 +252,10 @@ class Calibrator:
 
 if __name__ == "__main__":
 
-    pi_camera = picamerax.PiCamera()
+    # pi_camera = picamerax.PiCamera()
 
     # with Bridge() as bridge:
-    calibrator = Calibrator(pi_camera)
+    calibrator = Calibrator()
     try:
         calibrator.calibrate()
     except:
