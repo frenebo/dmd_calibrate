@@ -173,7 +173,7 @@ class Calibrator:
         exposure_us = exposure_seconds*1000000
         temp_image_fp = "temp_raw.jpg"
 
-        print("Calling raspistill")
+        print("Calling raspistill...")
         subprocess.call(
             "raspistill -md 3 -ex off -awb off -ag 1 -dg 1 -awbg -1.0,1.0 -set -v -ss {} --nopreview -r -o {}".format(
                 exposure_us, temp_image_fp),
