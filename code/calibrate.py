@@ -194,7 +194,7 @@ class Calibrator:
                 raise Exception("Couldn't find start tag for the camera raw bayer data. Was the jpeg captured with raw data at the end?")
 
 
-        subprocess.call("rm {}".format(temp_image_fp),shell=True)
+        # subprocess.call("rm {}".format(temp_image_fp),shell=True)
 
         # Image data proper starts after 2^15 bytes = 32768
         imdata = np.frombuffer(imbuf, dtype=np.uint8)[32768:]
