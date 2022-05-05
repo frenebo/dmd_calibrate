@@ -175,7 +175,7 @@ class Calibrator:
 
         print("Calling raspistill...")
         subprocess.call(
-            "raspistill -md 3 -ex off -awb off -ag 1 -dg 1 -awbg -1.0,1.0 -set -v -ss {} --nopreview -r -o {}".format(
+            "raspistill -md 3 -ex off -awb off -ag 6 -dg 1 -awbg -1.0,1.0 -set -v -ss {} --nopreview -r -o {}".format(
                 exposure_us, temp_image_fp),
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
