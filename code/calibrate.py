@@ -119,12 +119,12 @@ class Calibrator:
         y_points = np.arange(50,height-49,100)
         # # grid_x_mesh, grid_y = np.meshgrid(x_points, y_points)
         # # for
-        for x_pt in x_points:
-            for y_pt in y_points:
-                self.show_square_at(x_pt,y_pt)
-                # self.white_square_image(x_pt,y_pt,20,width,height)
-                img = self.capture_blue_pixels()
-                self.save_bw_floats(img, "{},{}.jpg".format(x_pt,y_pt))
+        # for x_pt in x_points:
+        #     for y_pt in y_points:
+        #         self.show_square_at(x_pt,y_pt)
+        #         # self.white_square_image(x_pt,y_pt,20,width,height)
+        #         img = self.capture_blue_pixels()
+        #         self.save_bw_floats(img, "{},{}.jpg".format(x_pt,y_pt))
 
         # x_points = np.linspace()
         # white_screen = self.float_to_
