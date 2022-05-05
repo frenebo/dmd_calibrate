@@ -214,6 +214,7 @@ class Calibrator:
         # percent
         if pixels_overexposed != 0:
             print("WARNING: {} pixels are overexposed in blue!".format(pixels_overexposed))
+        print("Average blue pixel value:".format(blue_pixels.mean()))
 
         # from 12 to 16 bit
         float_arr /= (2**12 - 1)
