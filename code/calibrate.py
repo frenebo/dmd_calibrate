@@ -63,7 +63,7 @@ class Calibrator:
         self.dmd_display_dims = (1280,800)
         self.first_display_dims = (1920,1080)
 
-        self.image_save_path = "display_img_temp.jpg"
+        self.image_save_path = "DMD_display_img_temp.jpg"
         self.running_feh = False
         # Set up DMD
 
