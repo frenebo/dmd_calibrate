@@ -178,7 +178,7 @@ class Calibrator:
             "raspistill -md 3 -ex off -awb off -ag 1 -dg 1 -awbg -1.0,1.0 -set -v -ss {} --nopreview -r -o {}".format(
                 exposure_us, temp_image_fp),
             stdout=subprocess.DEVNULL,
-            # stderr=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             shell=True)
         print("Finished raspistill")
 
