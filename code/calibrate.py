@@ -17,7 +17,7 @@ class Calibrator:
     def calibrate(self):
         self.map_grid()
 
-    def show_circle_at(self,x,y)
+    def show_circle_at(self,x,y):
         dmd_w, dmd_h = self.dmd_display_dims
         if x < 5 or y < 5:
             raise Exception("cant show square at x < 5 or y < 5, not enough space")
