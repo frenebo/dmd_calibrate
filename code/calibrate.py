@@ -125,14 +125,15 @@ class Calibrator:
         self.running_feh = False
 
     def capture_blue_pixels(self):
-        exposure_seconds = 1
+        exposure_seconds = 0.2
         exposure_us = exposure_seconds*1000000
         temp_image_fp = "temp_raw.jpg"
 
         print("Calling raspistill...")
         subprocess.call(
-            "raspistill -md 3 -ex off -awb off -ag 8 -dg 8 -awbg -1.0,1.0 -set -v -ss {} --nopreview -r -o {}".format(
-                exposure_us, temp_image_fp),
+            "raspistill -md 3 -ex -awb off --awbgains -1.0,1.0 --shutter {shutter} --analoggain 1.0 --digitalgain 1.0 --nopreview -r -o {save_img}".format(
+                shutter=exposure_us,
+                save_img=temp_image_fp),
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             shell=True)
