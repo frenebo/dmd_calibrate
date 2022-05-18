@@ -1,84 +1,23 @@
 import numpy as np
 from time import sleep
-# import picamerax
-# import picamerax.array
 import cv2
 from PIL import Image
 import subprocess
-# from pidng.core import RPICAM2DNG
-# from pidng.camdefs import RaspberryPiHqCamera, CFAPattern
 import io
-# def read_camera():
-#     return black_and_white_image
-
-# def display_image(core, slm_name, np_arr):
-#     core.set_slm_image(slm_name, np_arr.flatten())
-#     core.display_slm_image(slm_name)
-
-# def calibrate_display():
-#     with Bridge() as bridge:
-#         core = bridge.get_core()
-#         slm_name = core.get_slm_device()
-
-#         width = core.get_slm_width(slm_name)
-#         height = core.get_slm_height(slm_name)
-
-#         image_2d = np.zeros((height,width), dtype=np.uint8)
-#         image_2d[0:height//2,0:width//2] = 255
-#         display_image(core, slm_name, image_2d)
 
 class Calibrator:
     def __init__(self):
-        # # Set up camera
-        # # awb_gains = camera.awb_gains
-        # # print("AWB gains: {}", awb_gains)
-
-        # # camera.awb_mode = "off"
-        # # camera.awb_gains = awb_gains
-        # # camera.iso=100
-        # camera.framerate=1
-        # # camera.shutter_speed= 1000*1000
-        # # print("Exposure speed: ", camera.exposure_speed)
-
-        # # Set ISO to the desired value
-        # camera.exposure_mode = 'off'
-        # camera.iso = 100
-        # # Wait for the automatic gain control to settle
-        # # sleep(5)
-        # # Now fix the values
-        # camera.shutter_speed = 900000
-        # # camera.shutter_speed = camera.exposure_speed
-        # # g = camera.awb_gains
-        # camera.awb_mode = 'off'
-        # # camera.awb_gains = g
-        # # print("AWB gains:",g)
-        # # # Finally, take several photos with the fixed settings
-        # # camera.capture_sequence(['image%02d.jpg' % i for i in range(10)])
-
-        # self.camera = camera
-
-
-
         # Set up second display settings
         self.dmd_display_dims = (1280,800)
         self.first_display_dims = (1920,1080)
 
         self.image_save_path = "DMD_display_img_temp.jpg"
         self.running_feh = False
-        # Set up DMD
-
-        # self.core = bridge.get_core()
-        # self.slm_name = self.core.get_slm_device()
-
-        # self.slm_width = self.core.get_slm_width(self.slm_name)
-        # self.slm_height = self.core.get_slm_height(self.slm_name)
 
     def calibrate(self):
         self.map_grid()
 
-    def show_square_at(self,x,y):
-        # if x
-        # dmd_img = np.zeros((self))
+    def show_circle_at(self,x,y)
         dmd_w, dmd_h = self.dmd_display_dims
         if x < 5 or y < 5:
             raise Exception("cant show square at x < 5 or y < 5, not enough space")
@@ -87,8 +26,15 @@ class Calibrator:
 
         dmd_img = np.zeros((dmd_h,dmd_w),dtype=np.uint8)
 
-        # Fill in square
-        dmd_img[x-5:x+5,y-5:y+5] = np.iinfo(np.uint8).max
+        # Make a circle boolean mask
+        xx,yy = np.mgrid[:10,:10]
+        circle_mask = ((xx-4.5)**2+(yy-4.5)**2) <21
+        # "Color in" circle
+        circle = np.zeros((10,10),dtype=np.uint8)
+        circle[circle_mask] = np.iinfo(np.uint8).max
+
+        # Place circle inside image
+        dmd_img[x-5:x+5,y-5:y+5] = circle
         self.display_image(dmd_img)
 
     def save_bw_floats(self,float_img, fp):
@@ -96,47 +42,50 @@ class Calibrator:
         # white_screen = (white_screen * np.iinfo(np.uint8).max).astype(np.uint8)
         Image.fromarray(scaled_img, "L").save(fp)
 
+
     def map_grid(self):
         width,height = self.dmd_display_dims
 
         black_dmd_img = np.zeros((height,width),dtype=np.uint8)
         self.display_image(black_dmd_img)
-        background_image = self.capture_blue_pixels()
+
+        background_black = self.capture_blue_pixels()
         self.save_bw_floats(background_image,"black.jpg")
         self.display_image(np.ones_like(black_dmd_img)*np.iinfo(np.uint8).max)
-        self.save_bw_floats(self.capture_blue_pixels(), "white.jpg")
+        background_white = self.capture_blue_pixels()
+        self.save_bw_floats(backround_white, "white.jpg")
 
-        # white_dmd_img = np.full((height,width),np.iinfo(np.uint8).max,dtype=np.uint8)
-        # self.display_image(white_dmd_img)
-        # white_screen = self.capture_blue_pixels()
-
-        # # point_num = width//
-        # if width < 100:
-        #     raise Exception("dmd not wide enough to display grid")
-        # if height < 100:
-        #     raise Exception("dmd not high enough to display grid")
         x_points = np.arange(50,width-49,100)
         y_points = np.arange(50,height-49,100)
-        # # grid_x_mesh, grid_y = np.meshgrid(x_points, y_points)
-        # # for
-        # for x_pt in x_points:
-        #     for y_pt in y_points:
-        #         self.show_square_at(x_pt,y_pt)
-        #         # self.white_square_image(x_pt,y_pt,20,width,height)
-        #         img = self.capture_blue_pixels()
-        #         self.save_bw_floats(img, "{},{}.jpg".format(x_pt,y_pt))
+        print("Mapping grid of {} by {} points".format(len(x_points), len(y_points)))
 
-        # x_points = np.linspace()
-        # white_screen = self.float_to_
-        # white_screen = (white_screen * np.iinfo(np.uint8).max).astype(np.uint8)
-        # Image.fromarray(white_screen, "L").save("white_screen.jpg")
-        # print("Average brightness: {}".format(np.mean(background)))
-        # print("Max brightness: {}".format(np.max(background)))
-        # print("Min brightness: {}".format(np.min(background)))
-        # background -= np.min(background)
-        # background /= np.max(background)
-        # background = (background * np.iinfo(np.uint8).max).astype(np.uint8)
+        blob_detector = cv2.SimpleBlobDetector()
 
+        did_see = np.zeros(len(x_points),len(y_points),dtype=ints)
+
+        for x_idx, dmd_x in enumerate(x_points):
+            for y_idx, dmd_y in enumerate(y_points):
+                self.show_circle_at(dmd_x,dmd_y)
+                circle_cam_img = self.capture_blue_pixels()
+
+                # Normalize image from background
+                circle_cam_img = circle_cam_img - background_black
+
+                # Convert to uint8 array for cv2
+                int_img = (circle_cam_img * np.iinfo(np.uint8).max).astype(np.uint8)
+                int_img[circle_cam_img < 0] = 0
+                int_img[circle_cam_img > 1] = np.iinfo(np.uint8).max
+                circles = cv2.HoughCircles(int_img, cv2.HOUGH_GRADIENT,1,20)
+
+                if circles is None:
+                    pass
+                    # did_see[x_idx,y_idx]=0
+                    # print("Could not see circle at {}".format())
+                else:
+                    did_see[x_idx,y_idx]=1
+
+        print("Did see matrix:")
+        print(did_see)
 
 
         self.stop_feh()
