@@ -129,9 +129,9 @@ class Calibrator:
         exposure_us = exposure_seconds*1000000
         temp_image_fp = "temp_raw.jpg"
 
-        command = "raspistill -md 3 -ex -awb off --awbgains -1.0,1.0 --shutter {shutter} --analoggain 1.0 --digitalgain 1.0 --nopreview -r -o {save_img}".format(
-                shutter=exposure_us,
-                save_img=temp_image_fp)
+        command = "raspistill -md 3 -ex -awb off --awbgains -1.0,1.0 --shutter {} --analoggain 1.0 --digitalgain 1.0 --nopreview -r -o temp_raw.jpg".format(
+                exposure_us,
+                temp_image_fp)
         print("Calling " + command)
         subprocess.call(command,
             stdout=subprocess.DEVNULL,
