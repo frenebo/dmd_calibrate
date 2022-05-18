@@ -129,7 +129,7 @@ class Calibrator:
         exposure_us = exposure_seconds*1000000
         temp_image_fp = "temp_raw.jpg"
 
-        command = "raspistill -md 3 -ex -awb off --awbgains -1.0,1.0 --shutter {} --analoggain 1.0 --digitalgain 1.0 --nopreview -r -o temp_raw.jpg".format(
+        command = "raspistill -md 3 -awb off --awbgains -1.0,1.0 --shutter {} --analoggain 1.0 --digitalgain 1.0 --nopreview -r -o temp_raw.jpg".format(
                 exposure_us,
                 temp_image_fp)
         print("Calling " + command)
