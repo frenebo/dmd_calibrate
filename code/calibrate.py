@@ -53,7 +53,7 @@ class Calibrator:
         self.save_bw_floats(background_black,"black.jpg")
         self.display_image(np.ones_like(black_dmd_img)*np.iinfo(np.uint8).max)
         background_white = self.capture_blue_pixels()
-        self.save_bw_floats(backround_white, "white.jpg")
+        self.save_bw_floats(background_white, "white.jpg")
 
         x_points = np.arange(50,width-49,100)
         y_points = np.arange(50,height-49,100)
