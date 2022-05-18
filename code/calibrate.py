@@ -77,11 +77,18 @@ class Calibrator:
                 int_img[circle_cam_img > 1] = np.iinfo(np.uint8).max
                 circles = cv2.HoughCircles(int_img, cv2.HOUGH_GRADIENT,1,20)
 
-                if circles is None:
-                    pass
-                    # did_see[x_idx,y_idx]=0
-                    # print("Could not see circle at {}".format())
-                else:
+                if circles is not None:
+                    print("Circles shape:")
+                    print(circles.shape)
+                    # circles = circles[0, :]
+
+                    # # loop over the (x, y) coordinates and radius of the circles
+                    # for (x, y, r) in circles:
+                    #     # draw the circle in the output image, then draw a rectangle
+                    #     # corresponding to the center of the circle
+                    #     cv2.circle(output, (x, y), r, (0, 255, 0), 4)
+                    #     cv2.rectangle(output, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
+
                     did_see[x_idx,y_idx]=1
 
         print("Did see matrix:")
