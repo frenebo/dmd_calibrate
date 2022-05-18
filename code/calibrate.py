@@ -126,6 +126,7 @@ class Calibrator:
 
     def capture_blue_pixels(self):
         exposure_seconds = 0.2
+
         exposure_us = exposure_seconds*1000000
         temp_image_fp = "temp_raw.jpg"
 
