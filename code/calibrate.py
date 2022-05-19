@@ -61,7 +61,7 @@ class Calibrator:
 
         blob_detector = cv2.SimpleBlobDetector()
 
-        did_see = np.zeros(len(x_points),len(y_points),dtype=ints)
+        did_see = np.zeros(len(x_points),len(y_points),dtype=int)
 
         for x_idx, dmd_x in enumerate(x_points):
             for y_idx, dmd_y in enumerate(y_points):
