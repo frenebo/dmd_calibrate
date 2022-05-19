@@ -17,24 +17,6 @@ class Calibrator:
     def calibrate(self):
         self.map_grid()
 
-        # width,height = self.dmd_display_dims
-        # i = 1
-        # while True:
-        #     # print("Black")
-        #     black_dmd_img = np.zeros((height,width),dtype=np.uint8)
-        #     # self.display_image(black_dmd_img)
-
-        #     # time.sleep(5)
-        #     # # background_black = self.capture_blue_pixels()
-        #     # # self.save_bw_floats(background_black,"black.jpg")
-
-        #     print("White")
-        #     self.display_image(np.ones_like(black_dmd_img)*np.iinfo(np.uint8).max)
-
-        #     time.sleep(5)
-        #     background_white = self.capture_blue_pixels()
-        #     self.save_bw_floats(background_white, "{}.jpg".format(i))
-        #     i+=1
         self.stop_feh()
 
     def show_circle_at(self,x,y):
@@ -54,7 +36,6 @@ class Calibrator:
         circle[circle_mask] = np.iinfo(np.uint8).max
 
         # Place circle inside image
-
         print("Dmd image dimensions: {}".format(dmd_img.shape))
         print("x:{},y:{}".format(x,y))
         dmd_img[x-10:x+10,y-10:y+10] = circle
@@ -110,13 +91,6 @@ class Calibrator:
                     for (x, y, r) in circles:
                         print("Found circle at {x},{y} with radius {r}".format(x,y,r))
 
-                    # # loop over the (x, y) coordinates and radius of the circles
-                    # for (x, y, r) in circles:
-                    #     # draw the circle in the output image, then draw a rectangle
-                    #     # corresponding to the center of the circle
-                    #     cv2.circle(output, (x, y), r, (0, 255, 0), 4)
-                    #     cv2.rectangle(output, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
-
                     did_see[x_idx,y_idx]=1
 
         print("Did see matrix:")
@@ -144,7 +118,7 @@ class Calibrator:
             image=self.image_save_path
         ), shell=True)
         self.running_feh = True
-        time.sleep(0.5)
+        time.sleep(0.1)
 
     def stop_feh(self):
         if not self.running_feh:
