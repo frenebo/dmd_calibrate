@@ -15,23 +15,24 @@ class Calibrator:
         self.running_feh = False
 
     def calibrate(self):
+        self.map_grid()
 
-        width,height = self.dmd_display_dims
-        while True:
-            # print("Black")
-            black_dmd_img = np.zeros((height,width),dtype=np.uint8)
-            # self.display_image(black_dmd_img)
+        # width,height = self.dmd_display_dims
+        # while True:
+        #     # print("Black")
+        #     # black_dmd_img = np.zeros((height,width),dtype=np.uint8)
+        #     # self.display_image(black_dmd_img)
 
-            # time.sleep(5)
-            # # background_black = self.capture_blue_pixels()
-            # # self.save_bw_floats(background_black,"black.jpg")
+        #     # time.sleep(5)
+        #     # # background_black = self.capture_blue_pixels()
+        #     # # self.save_bw_floats(background_black,"black.jpg")
 
-            print("White")
-            self.display_image(np.ones_like(black_dmd_img)*np.iinfo(np.uint8).max)
+        #     print("White")
+        #     self.display_image(np.ones_like(black_dmd_img)*np.iinfo(np.uint8).max)
 
-            time.sleep(5)
-            # background_white = self.capture_blue_pixels()
-            # self.save_bw_floats(background_white, "white.jpg")
+        #     # time.sleep(5)
+        #     # background_white = self.capture_blue_pixels()
+        #     # self.save_bw_floats(background_white, "white.jpg")
 
     def show_circle_at(self,x,y):
         dmd_w, dmd_h = self.dmd_display_dims
