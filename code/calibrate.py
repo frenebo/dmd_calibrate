@@ -209,12 +209,12 @@ class Calibrator:
         #             width=width))
         #     print('{:12.5f}  |'.format(b[bins]))
 
-        # crappyhist(im.flatten())
-        # A_pix = im[::2,::2]
-        # B_pix = im[1::2,::2]
-        # C_pix = im[::2,1::2]
-        # D_pix = im[1::2,1::2]
-        # print("{} {}\n{} {}".format(np.mean(A_pix),np.mean(B_pix),np.mean(C_pix),np.mean(D_pix)))
+        crappyhist(im.flatten())
+        A_pix = im[::2,::2]
+        B_pix = im[1::2,::2]
+        C_pix = im[::2,1::2]
+        D_pix = im[1::2,1::2]
+        print("{} {}\n{} {}".format(np.mean(A_pix),np.mean(B_pix),np.mean(C_pix),np.mean(D_pix)))
 
         # blue_pixels = im[::2,::2]
         # float_arr = blue_pixels.astype(float)
