@@ -30,7 +30,7 @@ class Calibrator:
             print("White")
             self.display_image(np.ones_like(black_dmd_img)*np.iinfo(np.uint8).max)
 
-            # time.sleep(5)
+            time.sleep(5)
             # background_white = self.capture_blue_pixels()
             # self.save_bw_floats(background_white, "white.jpg")
         self.stop_feh()
