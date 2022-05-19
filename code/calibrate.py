@@ -191,11 +191,26 @@ class Calibrator:
         for byte in range(2):
             im[:, byte::2] = ( (imdata[:, byte::3] << 4) | ((imdata[:, 2::3] >> (byte * 4)) & 0b1111) )
         print("Image shape: {}".format(im.shape))
-        A_pix = im[::2,::2]
-        B_pix = im[1::2,::2]
-        C_pix = im[::2,1::2]
-        D_pix = im[1::2,1::2]
-        print("{} {}\n{} {}".format(np.mean(A_pix),np.mean(B_pix),np.mean(C_pix),np.mean(D_pix)))
+        print("Image average brightness: {}".format(np.mean(im)))
+        print("Image highest b")
+
+        def crappyhist(a, bins=50, width=140):
+            h, b = np.histogram(a, bins)
+
+            for i in range (0, bins):
+                print('{:12.5f}  | {:{width}s} {}'.format(
+                    b[i],
+                    '#'*int(width*h[i]/np.amax(h)),
+                    h[i],
+                    width=width))
+            print('{:12.5f}  |'.format(b[bins]))
+
+        crappyhist(a.flatten())
+        # A_pix = im[::2,::2]
+        # B_pix = im[1::2,::2]
+        # C_pix = im[::2,1::2]
+        # D_pix = im[1::2,1::2]
+        # print("{} {}\n{} {}".format(np.mean(A_pix),np.mean(B_pix),np.mean(C_pix),np.mean(D_pix)))
 
         # blue_pixels = im[::2,::2]
         # float_arr = blue_pixels.astype(float)
