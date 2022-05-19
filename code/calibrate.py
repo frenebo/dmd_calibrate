@@ -15,26 +15,26 @@ class Calibrator:
         self.running_feh = False
 
     def calibrate(self):
-        # self.map_grid()
+        self.map_grid()
 
-        width,height = self.dmd_display_dims
-        i = 1
-        while True:
-            # print("Black")
-            black_dmd_img = np.zeros((height,width),dtype=np.uint8)
-            # self.display_image(black_dmd_img)
+        # width,height = self.dmd_display_dims
+        # i = 1
+        # while True:
+        #     # print("Black")
+        #     black_dmd_img = np.zeros((height,width),dtype=np.uint8)
+        #     # self.display_image(black_dmd_img)
 
-            # time.sleep(5)
-            # # background_black = self.capture_blue_pixels()
-            # # self.save_bw_floats(background_black,"black.jpg")
+        #     # time.sleep(5)
+        #     # # background_black = self.capture_blue_pixels()
+        #     # # self.save_bw_floats(background_black,"black.jpg")
 
-            print("White")
-            self.display_image(np.ones_like(black_dmd_img)*np.iinfo(np.uint8).max)
+        #     print("White")
+        #     self.display_image(np.ones_like(black_dmd_img)*np.iinfo(np.uint8).max)
 
-            time.sleep(5)
-            background_white = self.capture_blue_pixels()
-            self.save_bw_floats(background_white, "{}.jpg".format(i))
-            i+=1
+        #     time.sleep(5)
+        #     background_white = self.capture_blue_pixels()
+        #     self.save_bw_floats(background_white, "{}.jpg".format(i))
+        #     i+=1
         self.stop_feh()
 
     def show_circle_at(self,x,y):
@@ -150,7 +150,7 @@ class Calibrator:
         self.running_feh = False
 
     def capture_blue_pixels(self):
-        exposure_seconds = 0.2
+        exposure_seconds = 0.1
         exposure_us = exposure_seconds*1000000
         temp_image_fp = "temp_raw.jpg"
 
