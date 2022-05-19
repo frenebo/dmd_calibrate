@@ -183,30 +183,33 @@ class Calibrator:
         # Reshape the data to 3056 rows of 6112 bytes each and crop to 3040 rows of 6084 bytes
         imdata = imdata.reshape((3056, 6112))[:3040, :6084]
 
-
+        # Convert to 16 bit data
+        imdata = imdata.astype(np.uint16)
 
         # Make an output 16 bit image
         im = np.zeros((3040, 4056), dtype=np.uint16)
         # Unpack the low-order bits from every 3rd byte in each row
         for byte in range(2):
+            # im[:, byte::2] = (imdata[:, byte::3] <> (byte * 4)) & 0b1111)
+            # for byte in range(2):]
             im[:, byte::2] = ( (imdata[:, byte::3] << 4) | ((imdata[:, 2::3] >> (byte * 4)) & 0b1111) )
-        print("Image shape: {}".format(im.shape))
-        print("Image average brightness: {}".format(np.mean(im)))
-        print("Image highest brightness: {}".format(im.max()))
-        # print("Image highest b")
+        # print("Image shape: {}".format(im.shape))
+        # print("Image average brightness: {}".format(np.mean(im)))
+        # print("Image highest brightness: {}".format(im.max()))
+        # # print("Image highest b")
 
-        def crappyhist(a, bins=20, width=140):
-            h, b = np.histogram(a, bins)
+        # def crappyhist(a, bins=20, width=140):
+        #     h, b = np.histogram(a, bins)
 
-            for i in range (0, bins):
-                print('{:12.5f}  | {:{width}s} {}'.format(
-                    b[i],
-                    '#'*int(width*h[i]/np.amax(h)),
-                    h[i],
-                    width=width))
-            print('{:12.5f}  |'.format(b[bins]))
+        #     for i in range (0, bins):
+        #         print('{:12.5f}  | {:{width}s} {}'.format(
+        #             b[i],
+        #             '#'*int(width*h[i]/np.amax(h)),
+        #             h[i],
+        #             width=width))
+        #     print('{:12.5f}  |'.format(b[bins]))
 
-        crappyhist(im.flatten())
+        # crappyhist(im.flatten())
         # A_pix = im[::2,::2]
         # B_pix = im[1::2,::2]
         # C_pix = im[::2,1::2]
