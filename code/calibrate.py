@@ -18,13 +18,13 @@ class Calibrator:
 
         width,height = self.dmd_display_dims
         while True:
-            print("Black")
-            black_dmd_img = np.zeros((height,width),dtype=np.uint8)
-            self.display_image(black_dmd_img)
+            # print("Black")
+            # black_dmd_img = np.zeros((height,width),dtype=np.uint8)
+            # self.display_image(black_dmd_img)
 
-            time.sleep(5)
-            # background_black = self.capture_blue_pixels()
-            # self.save_bw_floats(background_black,"black.jpg")
+            # time.sleep(5)
+            # # background_black = self.capture_blue_pixels()
+            # # self.save_bw_floats(background_black,"black.jpg")
 
             print("White")
             self.display_image(np.ones_like(black_dmd_img)*np.iinfo(np.uint8).max)
