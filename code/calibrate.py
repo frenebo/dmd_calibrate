@@ -194,7 +194,7 @@ class Calibrator:
         print("Image average brightness: {}".format(np.mean(im)))
         print("Image highest b")
 
-        def crappyhist(a, bins=50, width=140):
+        def crappyhist(a, bins=20, width=140):
             h, b = np.histogram(a, bins)
 
             for i in range (0, bins):
