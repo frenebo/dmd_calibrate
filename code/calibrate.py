@@ -17,7 +17,7 @@ class Calibrator:
     def calibrate(self):
         while True:
             print("Black")
-            # black_dmd_img = np.zeros((height,width),dtype=np.uint8)
+            black_dmd_img = np.zeros((height,width),dtype=np.uint8)
             self.display_image(black_dmd_img)
 
             time.sleep(5)
