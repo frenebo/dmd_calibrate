@@ -54,6 +54,9 @@ class Calibrator:
         circle[circle_mask] = np.iinfo(np.uint8).max
 
         # Place circle inside image
+
+        print("Dmd image dimensions: {}".format(dmd_img.shape))
+        print("x:{},y:{}".format(x,y))
         dmd_img[x-10:x+10,y-10:y+10] = circle
         self.display_image(dmd_img)
 
