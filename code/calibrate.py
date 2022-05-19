@@ -88,6 +88,7 @@ class Calibrator:
                 print("Showing circle at {},{}".format(dmd_x,dmd_y))
                 self.show_circle_at(dmd_x,dmd_y)
                 circle_cam_img = self.capture_blue_pixels()
+                self.save_bw_floats(circle_cam_img, "{},{}pos.jpg".format(x_idx,y_idx))
 
                 # Normalize image from background
                 circle_cam_img = circle_cam_img - background_black
