@@ -16,6 +16,7 @@ class Calibrator:
 
     def calibrate(self):
         self.map_grid()
+        self.stop_feh()
 
         # width,height = self.dmd_display_dims
         # while True:
@@ -116,7 +117,7 @@ class Calibrator:
         print(did_see)
 
 
-        self.stop_feh()
+        # self.stop_feh()
 
     def display_image(self, image_arr):
         if self.running_feh:
