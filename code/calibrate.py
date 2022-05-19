@@ -192,7 +192,8 @@ class Calibrator:
             im[:, byte::2] = ( (imdata[:, byte::3] << 4) | ((imdata[:, 2::3] >> (byte * 4)) & 0b1111) )
         print("Image shape: {}".format(im.shape))
         print("Image average brightness: {}".format(np.mean(im)))
-        print("Image highest b")
+        print("Image highest brightness: {}".format(im.max()))
+        # print("Image highest b")
 
         def crappyhist(a, bins=20, width=140):
             h, b = np.histogram(a, bins)
