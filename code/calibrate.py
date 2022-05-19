@@ -82,6 +82,7 @@ class Calibrator:
 
         for x_idx, dmd_x in enumerate(x_points):
             for y_idx, dmd_y in enumerate(y_points):
+                print("Showing circle at {},{}".format(dmd_x,dmd_y))
                 self.show_circle_at(dmd_x,dmd_y)
                 circle_cam_img = self.capture_blue_pixels()
 
