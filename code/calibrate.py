@@ -198,16 +198,16 @@ class Calibrator:
         # print("Image highest brightness: {}".format(im.max()))
         # # print("Image highest b")
 
-        # def crappyhist(a, bins=20, width=140):
-        #     h, b = np.histogram(a, bins)
+        def crappyhist(a, bins=20, width=80):
+            h, b = np.histogram(a, bins)
 
-        #     for i in range (0, bins):
-        #         print('{:12.5f}  | {:{width}s} {}'.format(
-        #             b[i],
-        #             '#'*int(width*h[i]/np.amax(h)),
-        #             h[i],
-        #             width=width))
-        #     print('{:12.5f}  |'.format(b[bins]))
+            for i in range (0, bins):
+                print('{:12.5f}  | {:{width}s} {}'.format(
+                    b[i],
+                    '#'*int(width*h[i]/np.amax(h)),
+                    h[i],
+                    width=width))
+            print('{:12.5f}  |'.format(b[bins]))
 
         crappyhist(im.flatten())
         A_pix = im[::2,::2]
