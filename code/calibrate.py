@@ -206,7 +206,7 @@ class Calibrator:
                     width=width))
             print('{:12.5f}  |'.format(b[bins]))
 
-        crappyhist(a.flatten())
+        crappyhist(im.flatten())
         # A_pix = im[::2,::2]
         # B_pix = im[1::2,::2]
         # C_pix = im[::2,1::2]
