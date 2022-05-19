@@ -33,7 +33,7 @@ class Calibrator:
 
             time.sleep(5)
             background_white = self.capture_blue_pixels()
-            # self.save_bw_floats(background_white, "{}.jpg".format(i))
+            self.save_bw_floats(background_white, "{}.jpg".format(i))
             i+=1
         self.stop_feh()
 
@@ -211,26 +211,26 @@ class Calibrator:
 
         crappyhist(im.flatten())
         A_pix = im[::2,::2]
-        B_pix = im[1::2,::2]
-        C_pix = im[::2,1::2]
-        D_pix = im[1::2,1::2]
-        print("{} {}\n{} {}".format(np.mean(A_pix),np.mean(B_pix),np.mean(C_pix),np.mean(D_pix)))
+        # B_pix = im[1::2,::2]
+        # C_pix = im[::2,1::2]
+        # D_pix = im[1::2,1::2]
+        # print("{} {}\n{} {}".format(np.mean(A_pix),np.mean(B_pix),np.mean(C_pix),np.mean(D_pix)))
 
-        # blue_pixels = im[::2,::2]
-        # float_arr = blue_pixels.astype(float)
+        blue_pixels = im[::2,::2]
+        float_arr = blue_pixels.astype(float)
 
-        # pixels_overexposed = (blue_pixels >= 2**12 - 1).sum()
+        pixels_overexposed = (blue_pixels >= 2**12 - 1).sum()
         # # percent
-        # if pixels_overexposed != 0:
-        #     print("WARNING: {} pixels are overexposed in blue!".format(pixels_overexposed))
-        # print("Average blue pixel value: {}".format(blue_pixels.mean()))
+        if pixels_overexposed != 0:
+            print("WARNING: {} pixels are overexposed in blue!".format(pixels_overexposed))
+        print("Average blue pixel value: {}".format(blue_pixels.mean()))
 
-        # # from 12 to 16 bit
-        # float_arr /= (2**12 - 1)
-        # float_arr[float_arr > 1] = 1
-        # float_arr[float_arr < 0] = 0
+        # from 12 bit
+        float_arr /= (2**12 - 1)
+        float_arr[float_arr > 1] = 1
+        float_arr[float_arr < 0] = 0
 
-        # return float_arr
+        return float_arr
 
         # raw_data = np.fromfile(temp_image_fp, dtype=np.uint8)
         # camera = RaspberryPiHqCamera(3, CFAPattern.BGGR)
