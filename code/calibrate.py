@@ -80,7 +80,10 @@ class Calibrator:
                 if circles is not None:
                     print("Circles shape:")
                     print(circles.shape)
-                    # circles = circles[0, :]
+                    circles = circles[0, :]
+
+                    for (x, y, r) in circles:
+                        print("Found circle at {x},{y} with radius {r}".format(x,y,r))
 
                     # # loop over the (x, y) coordinates and radius of the circles
                     # for (x, y, r) in circles:
