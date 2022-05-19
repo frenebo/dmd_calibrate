@@ -137,6 +137,7 @@ class Calibrator:
             image=self.image_save_path
         ), shell=True)
         self.running_feh = True
+        time.sleep(0.5)
 
     def stop_feh(self):
         if not self.running_feh:
