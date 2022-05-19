@@ -37,22 +37,22 @@ class Calibrator:
 
     def show_circle_at(self,x,y):
         dmd_w, dmd_h = self.dmd_display_dims
-        if x < 5 or y < 5:
+        if x < 10 or y < 10:
             raise Exception("cant show square at x < 5 or y < 5, not enough space")
-        if x > dmd_w - 5 or y > dmd_h - 5:
-            raise Exception("cant show square at x > {} or y > {}, not enough space".format(dmd_w-5,dmd_h-5))
+        if x > dmd_w - 10 or y > dmd_h - 10:
+            raise Exception("cant show square at x > {} or y > {}, not enough space".format(dmd_w-10,dmd_h-10))
 
         dmd_img = np.zeros((dmd_h,dmd_w),dtype=np.uint8)
 
         # Make a circle boolean mask
-        xx,yy = np.mgrid[:10,:10]
-        circle_mask = ((xx-4.5)**2+(yy-4.5)**2) <21
+        xx,yy = np.mgrid[:20,:20]
+        circle_mask = ((xx-9.5)**2+(yy-9.5)**2) < 91
         # "Color in" circle
-        circle = np.zeros((10,10),dtype=np.uint8)
+        circle = np.zeros((20,20),dtype=np.uint8)
         circle[circle_mask] = np.iinfo(np.uint8).max
 
         # Place circle inside image
-        dmd_img[x-5:x+5,y-5:y+5] = circle
+        dmd_img[x-10:x+10,y-10:y+10] = circle
         self.display_image(dmd_img)
 
     def save_bw_floats(self,float_img, fp):
