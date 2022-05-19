@@ -15,6 +15,8 @@ class Calibrator:
         self.running_feh = False
 
     def calibrate(self):
+
+        width,height = self.dmd_display_dims
         while True:
             print("Black")
             black_dmd_img = np.zeros((height,width),dtype=np.uint8)
