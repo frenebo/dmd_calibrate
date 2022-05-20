@@ -59,8 +59,10 @@ class Calibrator:
         background_white = self.capture_blue_pixels()
         self.save_bw_floats(background_white, "white.jpg")
 
-        x_points = np.arange(40,width-39,300)
-        y_points = np.arange(40,height-39,300)
+        # x_points = np.arange(40,width-39,300)
+        # y_points = np.arange(40,height-39,300)
+        x_points = [300,340,380]
+        y_points = [20,30,40]
         print("Mapping grid of {} by {} points".format(len(x_points), len(y_points)))
 
         blob_detector = cv2.SimpleBlobDetector()
