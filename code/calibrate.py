@@ -18,6 +18,48 @@ class Calibrator:
         self.map_grid()
 
         self.stop_feh()
+    
+    def interactive(self):
+        while True:
+            command = input()
+            words = command.split(",")
+            if words[0] == "exit":
+                break
+            elif words[0] == "showimage":
+                if len(words) < 2:
+                    raise Exception("No path provided for command {}".format(words[0]))
+                if len(words) > 2:
+                    raise Exception("Too many arguments provided for command: {}".format(words))
+                
+                path = words[1]
+                pil_img = Image.open(path)
+                # grayscale
+                pil_img = pil_img.convert('L')
+                np_img = np.array(pil_img)
+                # 0 to 1
+                float_img = np_img / np.iinfo(np_img.dtype).max
+                # 0 to 255
+                int8_img = (float_img * np.iinfo(np.uint8).max).astype(np.uint8)
+                
+                dmd_w, dmd_h = self.dmd_display_dims
+                if int8_img.shape != (dmd_h, dmd_w):
+                    raise Exception("Can't show image with shape {}, should be ({}, {})".format(
+                        int8_img.shape, dmd_h, dmd_w
+                    ))
+                
+                self.display_image(int8_img)                
+                
+            elif words[0] == "capturebluepixels":
+                if len(words) < 2:
+                    raise Exception("No path provided for command {}".format(words[0]))
+                if len(words) > 2:
+                    raise Exception("Too many arguments provided for command: {}".format(words))
+                
+                path = words[1]
+                background_black = self.capture_blue_pixels()
+                self.save_bw_floats(background_black, path)
+        self.stop_feh()
+        
 
     def show_circle_at(self,x,y):
         dmd_w, dmd_h = self.dmd_display_dims
@@ -97,9 +139,6 @@ class Calibrator:
 
         print("Did see matrix:")
         print(did_see)
-
-
-        # self.stop_feh()
 
     def display_image(self, image_arr):
         if self.running_feh:
