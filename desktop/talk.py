@@ -37,26 +37,26 @@ class RaspiController:
         else:
             raise Exception("Error from Pi when running command to stop showing image on dmd: {}".format(str(result)))
 
-    def take_picture_on_pi(self, local_image_path):
-        if (not local_image_path.endswith(".tif")) and (not local_image_path.endswith(".tiff")):
-            raise Exception("Pi camera will output a tif image, the filepath for copying the image should end with a .tif or .tiff. Invalid filepath '{}'".format(local_image_path))
+    # def take_picture_on_pi(self, local_image_path):
+    #     if (not local_image_path.endswith(".tif")) and (not local_image_path.endswith(".tiff")):
+    #         raise Exception("Pi camera will output a tif image, the filepath for copying the image should end with a .tif or .tiff. Invalid filepath '{}'".format(local_image_path))
 
-        remote_image_path = "picam_image_capture.tif"
+    #     remote_image_path = "picam_image_capture.tif"
 
-        result = self.execute_pi_instruction({
-            "command": "takepicture",
-            "savepath": remote_image_path,
-        })
-        if result["type"] == "success":
-            print("Successfully ran command to capture image from Raspberry Pi Cam and save on Pi as '{}'".format(remote_image_path))
-        else:
-            raise Exception("Error from Pi when running command to capture image from camera and saving as '{}': {}".format(remote_image_path, str(result)))
+    #     result = self.execute_pi_instruction({
+    #         "command": "takepicture",
+    #         "savepath": remote_image_path,
+    #     })
+    #     if result["type"] == "success":
+    #         print("Successfully ran command to capture image from Raspberry Pi Cam and save on Pi as '{}'".format(remote_image_path))
+    #     else:
+    #         raise Exception("Error from Pi when running command to capture image from camera and saving as '{}': {}".format(remote_image_path, str(result)))
 
-        ftp_client = self.ssh_client.open_sftp()
-        ftp_client.get(remote_image_path, local_image_path)
-        ftp_client.close()
+    #     ftp_client = self.ssh_client.open_sftp()
+    #     ftp_client.get(remote_image_path, local_image_path)
+    #     ftp_client.close()
 
-        print("Copied image '{}' from Pi to local file '{}'".format(remote_image_path, local_image_path))
+    #     print("Copied image '{}' from Pi to local file '{}'".format(remote_image_path, local_image_path))
 
     def execute_pi_instruction(self, instruction_object):
         instruction_string = json.dumps(instruction_object)

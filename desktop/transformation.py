@@ -2,6 +2,35 @@
 from matplotlib import pyplot as plt
 import numpy as np
 
+def best_fit_affine_transform(dmd_coords, camera_coords):
+    assert dmd_coords.shape == camera_coords.shape, "dmd and camera coordinate arrays should have same shape"
+
+    assert dmd_coords.shape[0] == 2, "coord arrays should be (2xN)"
+
+    N = dmd_coords.shape[1]
+
+    # Add a row of ones
+    dmd_coords = np.vstack( (dmd_coords, np.ones((1,N)) ) )
+
+    # print(dmd_coords.shape)
+    # print(camera_coords[0].shape)
+
+    # Change shape to Nx1 and Nx3 for linalg
+
+    camera_coords_x = camera_coords[0][:,np.newaxis]
+    camera_coords_y = camera_coords[1][:,np.newaxis]
+    dmd_coords = np.swapaxes(dmd_coords, 0, 1)
+
+    cam_coeffs_x = np.linalg.lstsq(dmd_coords, camera_coords_x, rcond=None)[0].T[0]
+    cam_coeffs_y = np.linalg.lstsq(dmd_coords, camera_coords_y, rcond=None)[0].T[0]
+    # print(cam_coeffs_x)
+    # print(cam_coeffs_y)
+
+    A = np.array([cam_coeffs_x[:2], cam_coeffs_y[:2]])
+    b = np.array([cam_coeffs_x[2], cam_coeffs_y[2]])
+
+    return A, b
+
 def test_transformation():
     # Create two subplots and unpack the output array immediately
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,5))
@@ -11,47 +40,47 @@ def test_transformation():
         (3, 10),
         (10,3),
         (10, 10),
-    ],  dtype=float)
-    origX, origY =  points.T
-    # print(origX)
-    # print(origY)
+        (3,5),
+        (4,10),
+        (3,8),
+    ],  dtype=float).T
+
+    A = np.array([
+        [0.8,0.2],
+        [-0.2,0.8],
+    ], dtype=float)
+
+
+
+    origX, origY =  points
+
     ax1.scatter(origX, origY, marker='.')
     ax1.set_xlim(0,15)
     ax1.set_ylim(0,15)
     ax2.set_xlim(0,15)
     ax2.set_ylim(0,15)
 
-    A = np.array([
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 0, 1],
-    ], dtype=float)
+    b = np.array([1.0, 2.0])
 
-    dvec = np.array([0, 0, 1], dtype=float)
+    new_points = A @ points + b[:, None]
 
-    points_3d = np.zeros((points.shape[0], 3),  dtype=float)
-    points_3d[:, :2] = points
-    # print(points_3d.T.shape)
-    # print(A.shape)
-    X_w = A @ points_3d.T + dvec[:, None]
-    X_w = X_w.T
+    new_points[0][0] += 1
 
-    # "Camera plane" distance from origin
-    f = 1
+    newX, newY = new_points
 
-    print(points_3d)
-    print(X_w)
-    X_w_zvals = X_w[:,2]
-    x_c = f * X_w / X_w_zvals[:,None]
-    print(x_c)
+    fitA, fitb = best_fit_affine_transform(points, new_points)
+    # print("A:")
+    # print(A)
+    # print(fitA)
+    # print("b:")
+    # print(b)
+    # print(fitb)
 
-    new_points = x_c[:,:2]
-    print(new_points)
+    predX, predY = fitA @ points + fitb[:, None]
 
-    newX, newY = new_points.T
-
-    ax2.scatter(newX, newY, marker='.')
-
+    plt.scatter(origX, origY, color='b')
+    plt.scatter(newX, newY, color='g')
+    plt.scatter(predX, predY, color='r')
     plt.show()
 
 

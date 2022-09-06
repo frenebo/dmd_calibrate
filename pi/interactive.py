@@ -133,7 +133,7 @@ class CameraInterface:
 
 class Interface:
     def __init__(self):
-        self.camera_interface = CameraInterface()
+        # self.camera_interface = CameraInterface()
         self.dmd_pic_sender = DmdPicSender()
 
     def input_loop(self):
@@ -152,20 +152,21 @@ class Interface:
 
         command = instruction["command"]
         if command == "takepicture":
-            if "savepath" not in instruction:
-                output = {"type": "error", "reason": "Input should contain 'savepath' attribute for path to save picture on raspberry pi"}
-                print(json.dumps(output))
-                return
+            output = {"type": "error", "reason": "Camera not supported right now"}
+            # if "savepath" not in instruction:
+            #     output = {"type": "error", "reason": "Input should contain 'savepath' attribute for path to save picture on raspberry pi"}
+            #     print(json.dumps(output))
+            #     return
 
-            save_path = instruction["savepath"]
-            try:
-                float_array_img = self.camera_interface.capture_blue_pixels()
-            except Exception as e:
-                output = {"type": "error", "reason": str(e)}
-            self.save_bw_floats(float_array_img, save_path)
+            # save_path = instruction["savepath"]
+            # try:
+            #     float_array_img = self.camera_interface.capture_blue_pixels()
+            # except Exception as e:
+            #     output = {"type": "error", "reason": str(e)}
+            # self.save_bw_floats(float_array_img, save_path)
 
-            output = {"type": "success"}
-            print(json.dumps(output))
+            # output = {"type": "success"}
+            # print(json.dumps(output))
         elif command == "dmd_start_show_image":
             if "loadpath" not in instruction:
                 output = {"type": "error", "reason": "Input should contain 'loadpath' attribute for path to load image for showing on DMD."}
