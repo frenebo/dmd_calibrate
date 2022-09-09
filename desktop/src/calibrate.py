@@ -7,7 +7,7 @@ import os
 import cv2
 
 from .raspiinterface import RaspiController
-from .camera import take_micromanager_pic
+from .camera import take_micromanager_pic_as_float_arr
 
 DMD_H_W = (912, 1140)
 
