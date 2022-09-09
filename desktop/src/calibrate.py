@@ -59,7 +59,7 @@ def draw_white_circle(np_float_img, diameter, center_x, center_y):
     np_float_img[np_float_img > 1.0] = 1.0
 
 
-def get_background_black_and_white_levels(core, raspi_controller, workdir):
+def get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir):
     # @TODO calibrate these values
     black_samples = 10
     white_samples = 10
@@ -243,11 +243,11 @@ def connected_components_old_find_blobs_in_photo(np_float_img, black_level, whit
     return found_blobs
 
 
-def calibrate(core, raspi_controller, workdir):
+def calibrate_geometry(core, raspi_controller, workdir):
     dmd_img_dir = os.path.join(workdir, "imgsfordmd")
     os.makedirs(dmd_img_dir, exist_ok=True)
 
-    black_level, white_level = get_background_black_and_white_levels(core, raspi_controller, workdir)
+    black_level, white_level = get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir)
 
     dmd_h, dmd_w = DMD_H_W
 
@@ -279,7 +279,12 @@ def calibrate(core, raspi_controller, workdir):
     # @TODO : ignore points that are less than half a radius from an edge of the camera field
     pass
 
-def calibrate(hostname, username, password, pi_interactive_script_path, workdir):
+def calibrate(
+    hostname,
+    username,
+    password,
+    pi_interactive_script_path,
+    workdir):
     os.makedirs(workdir, exist_ok=True)
 
 
@@ -288,7 +293,7 @@ def calibrate(hostname, username, password, pi_interactive_script_path, workdir)
         raspi_controller = RaspiController(hostname, username, password, pi_interactive_script_path)
 
         try:
-            calibrate(core, raspi_controller, workdir)
+            calibrate_geometry(core, raspi_controller, workdir)
         except:
             raspi_controller.stop_showing_image_on_dmd()
             raise
