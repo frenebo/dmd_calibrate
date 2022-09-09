@@ -1,5 +1,6 @@
 import paramiko
 import json
+import time
 
 class RaspiController:
     def __init__(self, hostname, username, password, pi_interactive_script_path):
@@ -38,12 +39,33 @@ class RaspiController:
             raise Exception("Error from Pi when running command to stop showing image on dmd: {}".format(str(result)))
 
     def execute_pi_instruction(self, instruction_object):
+        poll_wait_time = 0.1
         instruction_string = json.dumps(instruction_object)
         # Start controller script on Pi and run command
         stdin, stdout, stderr = self.ssh_client.exec_command("python3 " + self.pi_interactive_script_path)
         stdin.write(instruction_string + "\n")
-        script_output = stdout.readlines()
-        command_result = json.loads(script_output[0])
+
+        output_received = False
+        while True:
+            script_output = stdout.readlines()
+            script_err = stderr.readlines()
+
+            if len(script_err)!= 0:
+                output_text = "".join(script_err)
+                raise Exception("Error with pi program:"+output_text)
+            
+            if len(script_output) > 1:
+                raise Exception("Pi script output more than one line, instead of a clear single response: "+str(script_output))
+            elif len(script_output) == 1:
+                command_result = json.loads(script_output[0])
+                break
+            else:
+                time.sleep(poll_wait_time)
+
+            # time.sleep(poll_wait_time)
+        
+        # script_output = stdout.readlines()
+        # command_result = json.loads(script_output[0])
 
         return command_result
 
