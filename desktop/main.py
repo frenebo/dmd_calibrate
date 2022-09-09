@@ -14,4 +14,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    calibrate(args.hostname, args.username, args.password, args.pi_interactive_script, args.workdir)
+    calibrate(args.hostname, args.username, args.password, args.pi_interactive_script_path, args.workdir)
