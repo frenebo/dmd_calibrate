@@ -7,7 +7,7 @@ import os
 import cv2
 
 from .raspiinterface import RaspiController
-from .camera import take_micromanager_pic
+from .camera import take_micromanager_pic_as_float_arr
 from .coordtransformations import best_fit_affine_transform
 
 DMD_H_W = (912, 1140)
@@ -60,7 +60,7 @@ def draw_white_circle(np_float_img, diameter, center_x, center_y):
     np_float_img[np_float_img > 1.0] = 1.0
 
 
-def get_background_black_and_white_levels(core, raspi_controller, workdir):
+def get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir):
     # @TODO calibrate these values
     black_samples = 10
     white_samples = 10
@@ -244,21 +244,15 @@ def analyze_calibration_measurements(calibration_measurements):
         cam_circle_x = blob["centroid_x"]
         cam_circle_y = blob["centroid_y"]
 
-        dmd_circle_coords.append([dmd_circle_x, dmd_circle_y])
-        cam_circle_coords.append([cam_circle_x, cam_circle_y])
+    found_blobs = []
 
-    dmd_circle_coords = np.array(dmd_circle_coords)
-    cam_circle_coords = np.array(cam_circle_coords)
-
-
-    A, b = best_fit_affine_transform(dmd_circle_coords, cam_circle_coords)
-
-    predicted_cam_coords = A @ dmd_circle_coords.T + b[:,None]
-    predicted_cam_coords = predicted_cam_coords.T
-
-    # Find how far off these were
-    res = cam_circle_coords - predicted_cam_coords
-    pred_errors = np.sqrt(np.sum(np.square(res), axis=1))
+    for label in range(numLabels):
+        # If this blob corresponds to a dark region
+        if np.any((labels == 0) == np.logical_not(above_thresh)):
+            continue
+        # If this blob corresponds to a bright region, then continue to
+        x_min, y_min, width, height, area = stats[label]
+        centroid_x, centroid_y = centroids[label]
 
     rms = np.sqrt(np.average(np.square(pred_errors)))
     max_err = np.max(pred_errors)
@@ -267,11 +261,11 @@ def analyze_calibration_measurements(calibration_measurements):
 
 
 
-def calibrate(core, raspi_controller, workdir):
+def calibrate_geometry(core, raspi_controller, workdir):
     dmd_img_dir = os.path.join(workdir, "imgsfordmd")
     os.makedirs(dmd_img_dir, exist_ok=True)
 
-    black_level, white_level = get_background_black_and_white_levels(core, raspi_controller, workdir)
+    black_level, white_level = get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir)
 
     dmd_h, dmd_w = DMD_H_W
 
@@ -339,8 +333,12 @@ def calibrate(core, raspi_controller, workdir):
 
     pass
 
-
-def calibrate(hostname, username, password, pi_interactive_script_path, workdir):
+def calibrate(
+    hostname,
+    username,
+    password,
+    pi_interactive_script_path,
+    workdir):
     os.makedirs(workdir, exist_ok=True)
 
 
@@ -349,7 +347,7 @@ def calibrate(hostname, username, password, pi_interactive_script_path, workdir)
         raspi_controller = RaspiController(hostname, username, password, pi_interactive_script_path)
 
         try:
-            calibrate(core, raspi_controller, workdir)
+            calibrate_geometry(core, raspi_controller, workdir)
         except:
             raspi_controller.stop_showing_image_on_dmd()
             raise

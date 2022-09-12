@@ -5,9 +5,9 @@ import subprocess
 import json
 
 class DmdPicSender:
-    def __init__(self):
-        self.dmd_w = 1280
-        self.dmd_h = 800
+    def __init__(self, dmd_w, dmd_h):
+        self.dmd_w = dmd_w
+        self.dmd_h = dmd_h
         # Actually mirror array is 1140 x 912
 
         self.first_display_dims = (1920,1080)
@@ -30,7 +30,10 @@ class DmdPicSender:
 
 class Interface:
     def __init__(self):
-        self.dmd_pic_sender = DmdPicSender()
+        self.dmd_w = 1280
+        self.dmd_h = 800
+
+        self.dmd_pic_sender = DmdPicSender(self.dmd_w, self.dmd_h)
 
     def input_loop(self):
         line = input()
