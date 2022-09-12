@@ -8,6 +8,7 @@ import cv2
 
 from .raspiinterface import RaspiController
 from .camera import take_micromanager_pic
+from .coordtransformations import best_fit_affine_transform
 
 DMD_H_W = (912, 1140)
 
@@ -147,16 +148,11 @@ def find_blobs_in_photo(np_float_img, black_level, white_level):
     # Areas closer to white than to black are considered white
     thresh = (black_level + white_level) / 2
 
-
     blurred = cv2.GaussianBlur(img, (gaussian_blur_sigma, gaussian_blur_sigma), 0)
 
     above_thresh = np.uint8(blurred > thresh)
 
     contours, hierarchy = cv2.findContours(above_thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-    # if len(contours) == 0:
-
-    # if len(contours) > 1:
 
     found_blobs = []
 
@@ -198,49 +194,77 @@ def find_blobs_in_photo(np_float_img, black_level, white_level):
 
     return found_blobs
 
+def analyze_calibration_measurements(calibration_measurements):
+    categorized_measurements = {
+        "one_middle_blob": [],
+        "middle_blobs_and_boundary_blobs": [],
+        "only_boundary_blobs": [],
+        "no_blobs": [],
+    }
+
+    for datapt in calibration_measurements:
+        dmd_circle_x = datapt["dmd_circle_x"]
+        dmd_circle_y = datapt["dmd_circle_y"]
+        all_detected_blobs = datapt["camera_detected_blobs"]
+
+        middle_blobs = []
+        touching_edge_blobs =  []
+        for blob in all_detected_blobs:
+            if blob["touching_edge"]:
+                touching_edge_blobs.append(blob)
+            else:
+                middle_blobs.append(blob)
+
+        if len(all_detected_blobs) == 0:
+            categorized_measurements["no_blobs"].append(datapt)
+        else:
+            if len(middle_blobs) == 0:
+                categorized_measurements["only_boundary_blobs"].append(datapt)
+            elif len(edge_blobs) == 0:
+                if len(middle_blobs) > 1:
+                    raise CalibrationException("Detected multiple possible circles when displaying a circle at DMD coordinates x={} y={}".format(dmd_circle_x, dmd_circle_y))
+                categorized_measurements["one_middle_blob"].append(datapt)
+            else:
+                categorized_measurements["middle_blobs_and_boundary_blobs"].append(datapt)
+
+    dmd_circle_coords = []
+    cam_circle_coords = []
+
+    if len(categorized_measurements["one_middle_blob"]) < min_good_points:
+        raise CalibrationException("Couldn't get enough circle measurements that were fully in camera field. Needed {}, got {}".format(
+            min_good_points,
+            len(categorized_measurements["one_middle_blob"])
+        ))
+
+    for datapt in categorized_measurements["one_middle_blob"]:
+        dmd_circle_x = datapt["dmd_circle_x"]
+        dmd_circle_y = datapt["dmd_circle_y"]
+        blob = datapt["camera_detected_blobs"][0]
+
+        cam_circle_x = blob["centroid_x"]
+        cam_circle_y = blob["centroid_y"]
+
+        dmd_circle_coords.append([dmd_circle_x, dmd_circle_y])
+        cam_circle_coords.append([cam_circle_x, cam_circle_y])
+
+    dmd_circle_coords = np.array(dmd_circle_coords)
+    cam_circle_coords = np.array(cam_circle_coords)
 
 
-def connected_components_old_find_blobs_in_photo(np_float_img, black_level, white_level):
-    gaussian_blur_sigma = 7
-    touching_edge_pixels_threshold = 3
+    A, b = best_fit_affine_transform(dmd_circle_coords, cam_circle_coords)
 
-    # Areas closer to white than to black are considered white
-    thresh = (black_level + white_level) / 2
+    predicted_cam_coords = A @ dmd_circle_coords.T + b[:,None]
+    predicted_cam_coords = predicted_cam_coords.T
 
-    blurred = cv2.GaussianBlur(img,(gaussian_blur_sigma, gaussian_blur_sigma),0)
+    # Find how far off these were
+    res = cam_circle_coords - predicted_cam_coords
+    pred_errors = np.sqrt(np.sum(np.square(res), axis=1))
 
-    above_thresh = np.uint8(blurred > thresh)
+    rms = np.sqrt(np.average(np.square(pred_errors)))
+    max_err = np.max(pred_errors)
 
-    output = cv2.connectedComponentsWithStats(above_thresh)
+    return A, b, rms, max_err
 
-    numLabels, labels, stats, centroids = output
-
-    found_blobs = []
-
-    for label in range(numLabels):
-        # If this blob corresponds to a dark region
-        if np.any((labels == 0) == np.logical_not(above_thresh)):
-            continue
-        # If this blob corresponds to a bright region, then continue to
-        x_min, y_min, width, height, area = stats[label]
-        centroid_x, centroid_y = centroids[label]
-
-        # If blob is within the threshold distance of the edge of the image, consider it touching edge
-        touching_edge = (
-            (x_min <= touching_edge_pixels_threshold) or
-            (y_min <= touching_edge_pixels_threshold) or
-            (x_min + width >= np_float_img.shape[0] - touching_edge_pixels_threshold) or
-            (y_min + height >= np.float_img.shape[1] - touching_edge_pixels_threshold)
-            )
-
-        found_blobs.append({
-            "centroid_x": centroid_x,
-            "centroid_y": centroid_y,
-            "area": area,
-            "touching_edge": touching_edge,
-        })
-
-    return found_blobs
 
 
 def calibrate(core, raspi_controller, workdir):
@@ -251,11 +275,15 @@ def calibrate(core, raspi_controller, workdir):
 
     dmd_h, dmd_w = DMD_H_W
 
+    fit_transform_max_acceptable_camera_err = 10
+
     circle_diameter = 19
     edge_margin = math.ceil(circle_diameter / 2)
 
     grid_x_positions = np.arange(edge_margin, dmd_w - 1 - edge_margin, 70)
     grid_y_positions = np.arange(edge_margin, dmd_h - 1 - edge_margin, 70)
+
+    calibration_measurements = []
 
     for circle_dmd_y in grid_y_positions:
         for circle_dmd_x in grid_x_positions:
@@ -271,13 +299,46 @@ def calibrate(core, raspi_controller, workdir):
 
             found_cam_circles = find_circles_in_photo(circle_microphoto, black_level, white_level)
 
+            found_blobs = find_blobs_in_photo(circle_microphoto, black_level, white_level)
+
+            calibration_measurements.push({
+                "dmd_circle_x": circle_dmd_x,
+                'dmd_circle_y': circle_dmd_y,
+                "camera_detected_blobs": found_blobs,
+            })
+
+    transformA, transformb, fitRms, fitMaxErr = analyze_calibration_measurements(calibration_measurements)
+
+    if fitMaxErr > fit_transform_max_acceptable_camera_err:
+        raise CalibrationException("The best fit transformation for dmd and camera coordinates predicts incorrect camera coordinates by {}, more than the max acceptable value of {}".format(
+            fitMaxErr,
+            fit_transform_max_acceptable_camera_err
+        ))
+
+
+    dmdToCam2x3 = np.zeros((2,3))
+    dmdToCam2x3[0:2,0:2] = transformA
+    dmdToCam2x3[0:2,2:3] = transformb
+
+
+    # dmdToCam3x3 = np.zeros((3,3))
+    # dmdToCam3x3[0:2,0:2] = transformA
+    # dmdToCam3x3[0:2,2:3] = transformb
+    # dmdToCam3x3[2,2] = 1.0
+
+    # camToDmd3x3 = np.linalg.inv(dmdToCam3x3)
+
+
 
 
     # @TODO account for feh latency?
 
     # raspi_controller.send_and_show_image_on_dmd
     # @TODO : ignore points that are less than half a radius from an edge of the camera field
+    # @TODO test with  not enough points
+
     pass
+
 
 def calibrate(hostname, username, password, pi_interactive_script_path, workdir):
     os.makedirs(workdir, exist_ok=True)

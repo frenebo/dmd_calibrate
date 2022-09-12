@@ -3,6 +3,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 def best_fit_affine_transform(dmd_coords, camera_coords):
+    dmd_coords = np.array(dmd_coords)
+    camera_coords = np.array(camera_coords)
     assert dmd_coords.shape == camera_coords.shape, "dmd and camera coordinate arrays should have same shape"
 
     assert dmd_coords.shape[0] == 2, "coord arrays should be (2xN)"
@@ -23,6 +25,11 @@ def best_fit_affine_transform(dmd_coords, camera_coords):
 
     cam_coeffs_x = np.linalg.lstsq(dmd_coords, camera_coords_x, rcond=None)[0].T[0]
     cam_coeffs_y = np.linalg.lstsq(dmd_coords, camera_coords_y, rcond=None)[0].T[0]
+
+    # print(cam_coeffs_x)
+
+    T = np.vstack( [cam_coeffs_x, cam_coeffs_y] )
+    print(T)
     # print(cam_coeffs_x)
     # print(cam_coeffs_y)
 
@@ -30,6 +37,9 @@ def best_fit_affine_transform(dmd_coords, camera_coords):
     b = np.array([cam_coeffs_x[2], cam_coeffs_y[2]])
 
     return A, b
+
+def transform_camera_to_dmd_image(desired_cam_image, cam_to_dmd_Tmat):
+
 
 def test_transformation():
     # Create two subplots and unpack the output array immediately
