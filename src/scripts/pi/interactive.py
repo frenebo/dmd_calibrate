@@ -3,11 +3,10 @@ import time
 from PIL import Image
 import subprocess
 import json
+from ..constants import DMD_W, DMD_H
 
 class DmdPicSender:
-    def __init__(self, dmd_w, dmd_h, first_display_dims):
-        self.dmd_w = dmd_w
-        self.dmd_h = dmd_h
+    def __init__(self, first_display_dims):
         self.first_display_dims = first_display_dims
         # Actually mirror array is 1140 x 912
 
@@ -16,8 +15,8 @@ class DmdPicSender:
         first_display_w, first_display_h = self.first_display_dims
 
         subprocess.call("feh --hide-pointer --geometry {width}x{height}+{xoffset}+{yoffset} --borderless {image} &".format(
-            width=self.dmd_w,
-            height=self.dmd_h,
+            width=DMD_W,
+            height=DMD_H,
             xoffset=first_display_w,
             yoffset=0,
             image=image_path
@@ -30,11 +29,9 @@ class DmdPicSender:
 
 class Interface:
     def __init__(self):
-        self.dmd_w = 1280
-        self.dmd_h = 800
         first_display_dims = (1920,1080)
 
-        self.dmd_pic_sender = DmdPicSender(self.dmd_w, self.dmd_h, first_display_dims)
+        self.dmd_pic_sender = DmdPicSender()
 
     def input_loop(self):
         line = input()
@@ -70,7 +67,7 @@ class Interface:
             # 0 to 255
             int8_img = (float_img * np.iinfo(np.uint8).max).astype(np.uint8)
 
-            desired_dims = (self.dmd_h, self.dmd_w)
+            desired_dims = (DMD_H, DMD_W)
             if int8_img.shape != desired_dims:
                 output = {
                     "type": "error",

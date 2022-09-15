@@ -10,7 +10,7 @@ from .raspiinterface import RaspiController
 from .camera import take_micromanager_pic_as_float_arr
 from .coordtransformations import best_fit_affine_transform
 
-DMD_H_W = (912, 1140)
+from ..constants import DMD_W,  DMD_H
 
 # When calibration doesn't work right
 class CalibrationException(Exception):
@@ -21,7 +21,7 @@ def save_img_for_dmd(np_float_img, path):
     assert np_float_img.dtype == float, "Image should be float array"
     assert np.all(np_float_img >= 0), "Image should have no negative brightness values"
     assert np.all(np_float_img <= 1), "Image should have no brightness values greater than 1"
-    assert np_float_img.shape == DMD_H_W, "Numpy float image should have shape {}".format(DMD_H_W)
+    assert np_float_img.shape == (DMD_H, DMD_W), "Numpy float image should have shape {}".format((DMD_H, DMD_W))
 
     max_int16 =  np.iinfo(np.uint16).max
 
@@ -69,7 +69,9 @@ def get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir):
     max_black_field_var_rel_to_b_w_diff = 0.1
     max_white_field_var_rel_to_b_w_diff = 0.1
 
-    black_img_dmd = np.zeros(DMD_H_W, dtype=float)
+    dmd_dims = (DMD_H, DMD_W)
+
+    black_img_dmd = np.zeros( dmd_dims, dtype=float)
     black_img_dmd_path = os.path.join(dmd_img_dir, "allblack.tiff")
     save_img_for_dmd(black_img_dmd, black_img_dmd_path)
     raspi_controller.send_and_show_image_on_dmd(black_img_dmd_path)
@@ -81,7 +83,7 @@ def get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir):
         black_photos.append(black_img_microphoto)
 
 
-    white_img_dmd = np.ones(DMD_H_W, dtype=float)
+    white_img_dmd = np.ones(dmd_dims, dtype=float)
     white_img_dmd_path = os.path.join(dmd_img_dir, "allwhite.tiff")
     save_img_for_dmd(white_img_dmd, white_img_dmd_path)
     raspi_controller.send_and_show_image_on_dmd(white_img_dmd_path)
@@ -267,21 +269,21 @@ def calibrate_geometry(core, raspi_controller, workdir):
 
     black_level, white_level = get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir)
 
-    dmd_h, dmd_w = DMD_H_W
+    # dmd_h, dmd_w = DMD_H_W
 
     fit_transform_max_acceptable_camera_err = 10
 
     circle_diameter = 19
     edge_margin = math.ceil(circle_diameter / 2)
 
-    grid_x_positions = np.arange(edge_margin, dmd_w - 1 - edge_margin, 70)
-    grid_y_positions = np.arange(edge_margin, dmd_h - 1 - edge_margin, 70)
+    grid_x_positions = np.arange(edge_margin, DMD_W - 1 - edge_margin, 70)
+    grid_y_positions = np.arange(edge_margin, DMD_H - 1 - edge_margin, 70)
 
     calibration_measurements = []
 
     for circle_dmd_y in grid_y_positions:
         for circle_dmd_x in grid_x_positions:
-            marker_img_dmd = np.zeros(DMD_H_W, dtype=float)
+            marker_img_dmd = np.zeros( (DMD_H, DMD_W), dtype=float)
 
             draw_white_circle(marker_img_dmd, circle_diameter, circle_dmd_x, circle_dmd_y)
 

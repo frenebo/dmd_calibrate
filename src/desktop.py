@@ -1,5 +1,5 @@
 import argparse
-from src.calibrate import calibrate
+from scripts.desktop.calibrate import calibrate
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

@@ -1,4 +1,4 @@
-from src.interactive import Interface
+from scripts.pi.interactive import Interface
 
 
 if __name__ == "__main__":
