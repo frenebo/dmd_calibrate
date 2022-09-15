@@ -5,11 +5,11 @@ import subprocess
 import json
 from ..constants import DMD_W, DMD_H
 
+
+# @TODO Find from Raspberry Pi software what the first display dimensions are?
 class DmdPicSender:
     def __init__(self, first_display_dims):
         self.first_display_dims = first_display_dims
-        # Actually mirror array is 1140 x 912
-
 
     def display_image(self, image_path):
         first_display_w, first_display_h = self.first_display_dims
