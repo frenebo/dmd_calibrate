@@ -14,8 +14,6 @@ def best_fit_affine_transform(dmd_coords, camera_coords):
     # Add a row of ones
     dmd_coords = np.vstack( (dmd_coords, np.ones((1,N)) ) )
 
-    # print(dmd_coords.shape)
-    # print(camera_coords[0].shape)
 
     # Change shape to Nx1 and Nx3 for linalg
 
@@ -26,19 +24,18 @@ def best_fit_affine_transform(dmd_coords, camera_coords):
     cam_coeffs_x = np.linalg.lstsq(dmd_coords, camera_coords_x, rcond=None)[0].T[0]
     cam_coeffs_y = np.linalg.lstsq(dmd_coords, camera_coords_y, rcond=None)[0].T[0]
 
-    # print(cam_coeffs_x)
-
     T = np.vstack( [cam_coeffs_x, cam_coeffs_y] )
-    print(T)
-    # print(cam_coeffs_x)
-    # print(cam_coeffs_y)
 
-    A = np.array([cam_coeffs_x[:2], cam_coeffs_y[:2]])
-    b = np.array([cam_coeffs_x[2], cam_coeffs_y[2]])
+    # A = np.array([cam_coeffs_x[:2], cam_coeffs_y[:2]])
+    # b = np.array([cam_coeffs_x[2], cam_coeffs_y[2]])
 
-    return A, b
+    return T
+
+    # return A, b
 
 def transform_camera_to_dmd_image(desired_cam_image, cam_to_dmd_Tmat):
+
+
 
 
 def test_transformation():
@@ -78,7 +75,10 @@ def test_transformation():
 
     newX, newY = new_points
 
-    fitA, fitb = best_fit_affine_transform(points, new_points)
+    fitT = best_fit_affine_transform(points, new_points)
+
+    fitA = fitT[:,:2]
+    fitb = fitT[:,2:3]
     # print("A:")
     # print(A)
     # print(fitA)
