@@ -6,7 +6,7 @@ import math
 import os
 import cv2
 
-from .raspiinterface import RaspiController
+from .raspicontroller import RaspiController
 from .camera import take_micromanager_pic_as_float_arr
 from .coordtransformations import best_fit_affine_transform
 
@@ -246,20 +246,28 @@ def analyze_calibration_measurements(calibration_measurements):
         cam_circle_x = blob["centroid_x"]
         cam_circle_y = blob["centroid_y"]
 
-    found_blobs = []
+        dmd_circle_coords.push([dmd_circle_x, dmd_circle_y])
+        cam_circle_coords.push([cam_circle_x, cam_circle_y])
 
-    for label in range(numLabels):
-        # If this blob corresponds to a dark region
-        if np.any((labels == 0) == np.logical_not(above_thresh)):
-            continue
-        # If this blob corresponds to a bright region, then continue to
-        x_min, y_min, width, height, area = stats[label]
-        centroid_x, centroid_y = centroids[label]
+    dmd_circle_coords = np.array(dmd_circle_coords).T
+    cam_circle_coords = np.array(cam_circle_coords).T
+
+    best_fit_affine_transform(dmd_circle_coords, cam_circle_coords)
+
+    raise NotImplementedError
+
+    # for label in range(numLabels):
+    #     # If this blob corresponds to a dark region
+    #     if np.any((labels == 0) == np.logical_not(above_thresh)):
+    #         continue
+    #     # If this blob corresponds to a bright region, then continue to
+    #     x_min, y_min, width, height, area = stats[label]
+    #     centroid_x, centroid_y = centroids[label]
 
     rms = np.sqrt(np.average(np.square(pred_errors)))
     max_err = np.max(pred_errors)
 
-    return A, b, rms, max_err
+    return T, max_err
 
 
 
@@ -269,7 +277,6 @@ def calibrate_geometry(core, raspi_controller, workdir):
 
     black_level, white_level = get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir)
 
-    # dmd_h, dmd_w = DMD_H_W
 
     fit_transform_max_acceptable_camera_err = 10
 
@@ -303,7 +310,7 @@ def calibrate_geometry(core, raspi_controller, workdir):
                 "camera_detected_blobs": found_blobs,
             })
 
-    transformA, transformb, fitRms, fitMaxErr = analyze_calibration_measurements(calibration_measurements)
+    transformT, fitMaxErr = analyze_calibration_measurements(calibration_measurements)
 
     if fitMaxErr > fit_transform_max_acceptable_camera_err:
         raise CalibrationException("The best fit transformation for dmd and camera coordinates predicts incorrect camera coordinates by {}, more than the max acceptable value of {}".format(
