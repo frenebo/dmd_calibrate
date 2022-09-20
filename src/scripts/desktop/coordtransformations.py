@@ -26,15 +26,10 @@ def best_fit_affine_transform(dmd_coords, camera_coords):
 
     T = np.vstack( [cam_coeffs_x, cam_coeffs_y] )
 
-    # A = np.array([cam_coeffs_x[:2], cam_coeffs_y[:2]])
-    # b = np.array([cam_coeffs_x[2], cam_coeffs_y[2]])
-
     return T
 
-    # return A, b
-
 def transform_camera_to_dmd_image(desired_cam_image, cam_to_dmd_Tmat):
-
+    pass
 
 
 
