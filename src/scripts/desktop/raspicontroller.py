@@ -43,6 +43,7 @@ class RaspiController:
         instruction_string = json.dumps(instruction_object)
         # Start controller script on Pi and run command
         stdin, stdout, stderr = self.ssh_client.exec_command("python3 " + self.pi_interactive_script_path)
+        print("Sending instructions:\n{}".format(instruction_string))
         stdin.write(instruction_string + "\n")
 
         output_received = False
