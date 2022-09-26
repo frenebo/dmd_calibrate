@@ -31,7 +31,7 @@ class Interface:
     def __init__(self):
         first_display_dims = (1920,1080)
 
-        self.dmd_pic_sender = DmdPicSender()
+        self.dmd_pic_sender = DmdPicSender(first_display_dims)
 
     def input_loop(self):
         line = input()
