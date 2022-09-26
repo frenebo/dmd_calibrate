@@ -57,8 +57,26 @@ class Interface:
             loadpath = instruction["loadpath"]
 
             # Test image to see if valid grayscale image with right dimensions
+            # try:
+            if not os.path.exists(loadpath);
+                output = {
+                    "type": "error",
+                    "reason": "Can't find image at path {}".format(loadpath)
+                }
+                print(json.dumps(output))
+                return
 
-            pil_img = Image.open(loadpath)
+            try:
+                pil_img = Image.open(loadpath)
+            except Exception as e:
+                output = {
+                    "type": "error"<
+
+                    "reason": "Error loading image {}: {}".format(loadpath, str(e))
+                }
+                print(json.dumps(output))
+                return
+
             # grayscale
             pil_img = pil_img.convert('L')
             np_img = np.array(pil_img)
@@ -78,7 +96,15 @@ class Interface:
                 print(json.dumps(output))
                 return
 
-            self.dmd_pic_sender.display_image(int8_img)
+            try:
+                self.dmd_pic_sender.display_image(int8_img)
+            except Exception as e:
+                output = {
+                    "type": "error",
+                    "reason": "Error displaying image: {}".format(str(e))
+                }
+                print(json.dumps(output))
+                return
 
             output = {"type": "success"}
             print(json.dumps(output))
