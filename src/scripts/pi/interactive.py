@@ -70,8 +70,7 @@ class Interface:
                 pil_img = Image.open(loadpath)
             except Exception as e:
                 output = {
-                    "type": "error"<
-
+                    "type": "error",
                     "reason": "Error loading image {}: {}".format(loadpath, str(e))
                 }
                 print(json.dumps(output))
