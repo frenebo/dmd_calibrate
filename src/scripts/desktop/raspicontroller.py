@@ -51,9 +51,10 @@ class RaspiController:
             script_err = stderr.readlines()
 
             if len(script_err)!= 0:
-                output_text = "".join(script_err)
-                raise Exception("Error with pi program:"+output_text)
-            
+                text_stderr = "".join(script_err)
+                text_stdout = "".join(script_output)
+                raise Exception("Error with pi program:\nstderr:\n"+text_stderr+"\nstdout:\n" + text_stdout)
+
             if len(script_output) > 1:
                 raise Exception("Pi script output more than one line, instead of a clear single response: "+str(script_output))
             elif len(script_output) == 1:
@@ -63,7 +64,7 @@ class RaspiController:
                 time.sleep(poll_wait_time)
 
             # time.sleep(poll_wait_time)
-        
+
         # script_output = stdout.readlines()
         # command_result = json.loads(script_output[0])
 
