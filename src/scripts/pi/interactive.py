@@ -58,7 +58,7 @@ class Interface:
 
             # Test image to see if valid grayscale image with right dimensions
             # try:
-            if not os.path.exists(loadpath);
+            if not os.path.exists(loadpath):
                 output = {
                     "type": "error",
                     "reason": "Can't find image at path {}".format(loadpath)
