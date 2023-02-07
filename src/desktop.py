@@ -8,7 +8,6 @@ if __name__ == "__main__":
     parser.add_argument('hostname', help="hostname to find raspberry pi, for example 'raspberrypi' is the default for a raspi on a local network")
     parser.add_argument('username', help="Username to login on raspberry pi")
     parser.add_argument('password', help="Password to login on raspberry pi")
-    parser.add_argument('pi_interactive_script_path', help="Path on Pi for interactive python 3 script, the Pi should have downloaded the matching interactive python script to run and receive instructions")
     parser.add_argument('--workdir', default='dmdworkdir', help="Directory for placing temporary files sent to and from raspi")
 
 
@@ -18,5 +17,4 @@ if __name__ == "__main__":
         args.hostname,
         args.username,
         args.password,
-        args.pi_interactive_script_path,
         args.workdir)

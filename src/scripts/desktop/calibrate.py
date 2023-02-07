@@ -346,14 +346,13 @@ def calibrate(
     hostname,
     username,
     password,
-    pi_interactive_script_path,
     workdir):
     os.makedirs(workdir, exist_ok=True)
 
 
     with pycromanager.Bridge() as bridge:
         core = bridge.get_core()
-        raspi_controller = RaspiController(hostname, username, password, pi_interactive_script_path)
+        raspi_controller = RaspiController(hostname, username, password)
 
         try:
             calibrate_geometry(core, raspi_controller, workdir)
