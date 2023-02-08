@@ -9,6 +9,4 @@ def take_micromanager_pic_as_float_arr(core):
 
     assert pixels.dtype == np.uint16, "Expecting the raw image from micromanager to be 16 bit integer format"
 
-
-
     return pixels
