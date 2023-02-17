@@ -5,6 +5,7 @@ import pycromanager
 import math
 import os
 import cv2
+from matplotlib import pyplot as plt
 
 from .raspicontroller import RaspiController
 from .camera import take_micromanager_pic_as_float_arr
@@ -51,19 +52,73 @@ def draw_white_circle(np_float_img, diameter, center_x, center_y):
     circ_mask = (np.square(circ_xx - rad) + np.square(circ_yy - rad)) <= np.square(rad + 0.5)
 
     # Convert to float
-    circ_mask *= 1.0
+    circ_mask  = circ_mask.astype(float)
 
     # Add white circle to brightness values
-    np_float_img[center_x - rad:center_x + rad + 1, center_y - rad:center_y + rad + 1] += circ_mask
+    # print("center_x {}".format(center_x.shape))
+    # print("circ mask shape: {}".format(circ_mask.shape))
+    # print("coordinates for putting it: {}:{}, {}:{}".format(
+    #     center_x - rad,center_x + rad + 1, center_y - rad,center_y + rad + 1
+    # ))
+    # print("np image shape: {}".format(np_float_img.shape))
+    np_float_img[center_y - rad:center_y + rad + 1, center_x - rad:center_x + rad + 1] += circ_mask
 
     # If the spot wasn't already white, then it'll have brightness more than 1.0 now - fix this here
     np_float_img[np_float_img > 1.0] = 1.0
 
+def show_black_white_calibration_images(white_photos, black_photos, white_level, black_level):
+    hist_min = np.amin(
+        np.array([white_photos, black_photos])
+    )
+
+    hist_max = np.amax(
+        np.array([white_photos, black_photos])
+    )
+
+    fig, axs = plt.subplots(4,max(len(white_photos), len(black_photos)), figsize=(15,7), gridspec_kw={'height_ratios':[3,1,3,1]})
+    for i in range(len(white_photos)):
+        # Show image without ticks 
+        axs[0][i].set_axis_off()
+        img_ax = axs[0][i].imshow(white_photos[i], cmap='gray')
+        # plt.hist()
+        counts, bins = np.histogram(
+            white_photos[i].flatten(),
+            bins=200,
+            range=(hist_min, hist_max),
+            )
+        axs[1][i].stairs(counts, bins, fill=True, color='white')
+        axs[1][i].set_facecolor('black')
+        axs[1][i].tick_params(left=False,labelleft = False)
+    
+    axs[0][0].set_axis_on()
+    axs[0][0].tick_params(labelleft = False,left=False,bottom=False,labelbottom=False)
+    axs[0][0].set_ylabel("All White\nWhite Level={:.1f}".format(white_level))
+
+    for i in range(len(black_photos)):
+        axs[2][i].set_axis_off()
+        img_ax = axs[2][i].imshow(black_photos[i], cmap='gray')
+
+        counts, bins = np.histogram(
+            black_photos[i].flatten(),
+            bins=200,
+            range=(hist_min, hist_max),
+        )
+        axs[3][i].stairs(counts, bins, fill=True, color='white')
+        axs[3][i].set_facecolor('black')
+        axs[3][i].tick_params(left=False, labelleft=False)
+    
+    axs[2][0].set_axis_on()
+    axs[2][0].tick_params(labelleft = False,left=False,bottom=False,labelbottom=False)
+    axs[2][0].set_ylabel("All Black\nBlack Level={:.1f}".format(black_level))
+    
+    plt.show()
 
 def get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir):
     # @TODO calibrate these values
-    black_samples = 10
-    white_samples = 10
+    NUM_BLACK_SAMPLES = 10
+    NUM_WHITE_SAMPLES = 10
+
+    gaussian_blur_sigma = 201
 
     max_relative_variance_rel_to_b_w_diff = 0.1
     max_black_field_var_rel_to_b_w_diff = 0.1
@@ -74,11 +129,11 @@ def get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir):
     black_img_dmd = np.zeros( dmd_dims, dtype=float)
     black_img_dmd_path = os.path.join(dmd_img_dir, "allblack.tiff")
     save_img_for_dmd(black_img_dmd, black_img_dmd_path)
-    raspi_controller.send_and_show_image_on_dmd(black_img_dmd_path)
+    raspi_controller.send_image_to_feh(black_img_dmd_path)
 
     black_photos = []
 
-    for i in range(black_samples):
+    for i in range(NUM_BLACK_SAMPLES):
         black_img_microphoto = take_micromanager_pic_as_float_arr(core)
         black_photos.append(black_img_microphoto)
 
@@ -86,15 +141,16 @@ def get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir):
     white_img_dmd = np.ones(dmd_dims, dtype=float)
     white_img_dmd_path = os.path.join(dmd_img_dir, "allwhite.tiff")
     save_img_for_dmd(white_img_dmd, white_img_dmd_path)
-    raspi_controller.send_and_show_image_on_dmd(white_img_dmd_path)
+    raspi_controller.send_image_to_feh(white_img_dmd_path)
 
     white_photos = []
-    for i in range(white_samples):
+    for i in range(NUM_WHITE_SAMPLES):
         white_img_microphoto = take_micromanager_pic_as_float_arr(core)
         white_photos.append(white_img_microphoto)
 
+
     all_black_samples = np.array(black_photos)
-    all_white_samples = np.array(white_samples)
+    all_white_samples = np.array(white_photos)
 
     var_within_black = np.average(np.var(all_black_samples, axis=0))
     var_within_white = np.average(np.var(all_white_samples, axis=0))
@@ -103,12 +159,19 @@ def get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir):
     avg_black = np.average(all_black_samples, axis=0)
     avg_white = np.average(all_white_samples, axis=0)
 
+
+    # # Just call the average pixel value in black images the black level
+    # black_level = np.average(avg_black)
+    # # And average pixel value in white images the white level
+    # white_level = np.average(avg_white)
+
+
+
     var_between_avg_black_and_white = np.average(np.var(np.array([avg_black, avg_white]), axis=0))
 
-    # Check that there is a significant difference bet
-    too_much_black_var = False
-    too_much_white_var = False
-
+    # Check that there is a statistical difference between datasets -
+    # This should show whether there is a detected difference between
+    # DMD "white screen" and "black screen"
     if (
         (var_within_black > max_relative_variance_rel_to_b_w_diff * var_between_avg_black_and_white) or
         (var_within_white > max_relative_variance_rel_to_b_w_diff * var_between_avg_black_and_white)
@@ -118,45 +181,66 @@ def get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir):
             var_within_white,
             var_between_avg_black_and_white,
         ))
+    
 
-    # In addition to checking the variance of black images relative to each other, make sure the average black image is more or less even.
-    var_in_avg_black_img = np.var(avg_black)
-    if var_in_avg_black_img > max_black_field_var_rel_to_b_w_diff * var_between_avg_black_and_white:
-        raise CalibrationException("The unevenness of the average black field is too high: variance within avg black calibration image is {}, compared to variance between average black and average white image: {}.".format(
-            var_in_avg_black_img,
-            var_between_avg_black_and_white,
-        ))
+    # If the dmd lit-up area only covers part of the image, we need to find the white level based on the area that is white.
+    # averaged_black_img_field = np.mean(all_black_samples)
+    # averaged_white_img_field = np.mean(all_white_samples)
+    mean_black_brightness = np.average(avg_black)
+    mean_white_brightness = np.average(avg_white)
+    
+    blurred_black_avg = cv2.GaussianBlur(avg_black, (gaussian_blur_sigma, gaussian_blur_sigma), 0)
+    blurred_white_avg = cv2.GaussianBlur(avg_white, (gaussian_blur_sigma, gaussian_blur_sigma), 0)
 
-    var_in_avg_white_img = np.var(avg_white)
-    if var_in_avg_white_img > max_white_field_var_rel_to_b_w_diff * var_between_avg_black_and_white:
-        raise CalibrationException("The unevenness of the average white field is too high: variance within avg white calibration image is {}, compared to variance between average black and average white image: {}.".format(
-            var_in_avg_white_img,
-            var_between_avg_black_and_white,
-        ))
+    # The pixels that are on average more bright in white than black images give us the mask for the part of the image
+    # We use to find the white level. We use the blurred images to find this region so that speckles don't affect it too much
+    illuminated_section_mask = blurred_white_avg > mean_black_brightness + (mean_white_brightness - mean_black_brightness) * 0.3
+    print("mean black: ", mean_black_brightness)
+    # print("mean white: ", mean_white_brightness)
+
+    black_level = mean_black_brightness
+    white_level = np.average(avg_white[illuminated_section_mask])
+
+    show_black_white_calibration_images(white_photos, black_photos, white_level, black_level)
+
+    print("white level: ", white_level)
 
 
-    # Just call the average pixel value in black images the black level
-    black_level = np.average(avg_black)
-    # And average pixel value in white images the white level
-    white_level = np.average(avg_white)
+    # # In addition to checking the variance of black images relative to each other, make sure the average black image is more or less even.
+    # var_in_avg_black_img = np.var(avg_black)
+    # if var_in_avg_black_img > max_black_field_var_rel_to_b_w_diff * var_between_avg_black_and_white:
+    #     raise CalibrationException("The unevenness of the average black field is too high: variance within avg black calibration image is {}, compared to variance between average black and average white image: {}.".format(
+    #         var_in_avg_black_img,
+    #         var_between_avg_black_and_white,
+    #     ))
+
+    # var_in_avg_white_img = np.var(avg_white)
+    # if var_in_avg_white_img > max_white_field_var_rel_to_b_w_diff * var_between_avg_black_and_white:
+    #     raise CalibrationException("The unevenness of the average white field is too high: variance within avg white calibration image is {}, compared to variance between average black and average white image: {}.".format(
+    #         var_in_avg_white_img,
+    #         var_between_avg_black_and_white,
+    #     ))
 
     return black_level, white_level
 
-
 def find_blobs_in_photo(np_float_img, black_level, white_level):
-    gaussian_blur_sigma = 7
+    print("Finding blobs in photo")
+    gaussian_blur_sigma = 81
     touching_edge_pixels_threshold = 3
 
     # Areas closer to white than to black are considered white
     thresh = (black_level + white_level) / 2
 
-    blurred = cv2.GaussianBlur(img, (gaussian_blur_sigma, gaussian_blur_sigma), 0)
+    blurred = cv2.GaussianBlur(np_float_img, (gaussian_blur_sigma, gaussian_blur_sigma), 0)
 
     above_thresh = np.uint8(blurred > thresh)
 
     contours, hierarchy = cv2.findContours(above_thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     found_blobs = []
+    found_contours = []
+
+    # print(contours)
 
 
     for contour_i in range(len(contours)):
@@ -164,20 +248,30 @@ def find_blobs_in_photo(np_float_img, black_level, white_level):
         area = cv2.contourArea(contour)
         perimeter = cv2.arcLength(contour,True)
 
+        if perimeter <= 0 or area <= 0:
+            continue
+
 
         circularity = 2*np.sqrt(np.pi*area)  / perimeter
 
-        x_min,y_min,width,height = cv2.boundingRect(cntr)
+        x_min,y_min,width,height = cv2.boundingRect(contour)
 
         is_touching_edge = (
             (x_min <= touching_edge_pixels_threshold) or
             (y_min <= touching_edge_pixels_threshold) or
             (x_min + width >= np_float_img.shape[0] - touching_edge_pixels_threshold) or
-            (y_min + height >= np.float_img.shape[1] - touching_edge_pixels_threshold)
+            (y_min + height >= np_float_img.shape[1] - touching_edge_pixels_threshold)
             )
 
-        M = cv2.moments(big_contour)
-        cx = m["m10"]/M["m00"]
+        M = cv2.moments(contour)
+        # print("Contour: ", contour)
+        # print("Contour moments:")
+        # for k in M:
+        #     print("{}: {},".format(k,M[k]), end="")
+        # print("")
+        # print("Area: {}".format(area))
+        # print("Perimeter: {}".format(perimeter))
+        cx = M["m10"]/M["m00"]
         cy = M["m01"]/M["m00"]
 
 
@@ -193,8 +287,9 @@ def find_blobs_in_photo(np_float_img, black_level, white_level):
             "width": width,
             "height": height,
         })
+        found_contours.append(contour)
 
-    return found_blobs
+    return found_blobs, found_contours
 
 def analyze_calibration_measurements(calibration_measurements):
     categorized_measurements = {
@@ -222,7 +317,7 @@ def analyze_calibration_measurements(calibration_measurements):
         else:
             if len(middle_blobs) == 0:
                 categorized_measurements["only_boundary_blobs"].append(datapt)
-            elif len(edge_blobs) == 0:
+            elif len(touching_edge_blobs) == 0:
                 if len(middle_blobs) > 1:
                     raise CalibrationException("Detected multiple possible circles when displaying a circle at DMD coordinates x={} y={}".format(dmd_circle_x, dmd_circle_y))
                 categorized_measurements["one_middle_blob"].append(datapt)
@@ -269,46 +364,125 @@ def analyze_calibration_measurements(calibration_measurements):
 
     return T, max_err
 
+def show_calibration_pics(photo_arr, contours_arr):
+    plt.clf()
+    num_y = len(photo_arr)
+    num_x = len(photo_arr[0])
+
+    
+    lined = {}
+
+    fig, axs = plt.subplots(num_y, num_x, figsize=(15,7))
+    for row_idx in range(num_y):
+        for col_idx in range(num_x):
+            ax = axs[row_idx][col_idx]
+            ax.set_axis_off()
+            calib_pic = photo_arr[row_idx][col_idx]
+            # calib_pic = Image.fromarray(np.)
+            ax.imshow(calib_pic, cmap='gray')
+            im_contours = contours_arr[row_idx][col_idx]
+            for i, c in enumerate(im_contours):
+                X,Y = np.array(c).T
+                X=X[0]
+                Y=Y[0]
+                # d
+                # print("X:",X.shape)
+                # print("Y:",Y.shape)
+                # print("Plotting a contour")
+                ax.plot( X, Y , linewidth=2,alpha=0.8, label="blob {}".format(i))
+            lines = ax.get_lines()
+            leg = ax.legend(bbox_to_anchor=(1.1,1), borderaxespad=0, loc="upper left")
+            for legline, origline in zip(leg.get_lines(), lines):
+                legline.set_picker(True)
+                lined[legline] = origline
+            
+
+    def on_pick(event):
+        #On the pick event, find the original line corresponding to the legend
+        #proxy line, and toggle its visibility.
+        legline = event.artist
+        origline = lined[legline]
+        visible = not origline.get_visible()
+        origline.set_visible(visible)
+        #Change the alpha on the line in the legend so we can see what lines
+        #have been toggled.
+        legline.set_alpha(1.0 if visible else 0.2)
+        fig.canvas.draw()
+
+    fig.canvas.mpl_connect('pick_event', on_pick)
+    # plt.show()
+
+            
+#     lines = ax.get_lines()
+# leg = ax.legend(fancybox=True, shadow=True)
+# lined = {}  # Will map legend lines to original lines.
+# for legline, origline in zip(leg.get_lines(), lines):
+#     legline.set_picker(True)  # Enable picking on the legend line.
+#     lined[legline] = origline
+
+# def on_pick(event):
+
+# fig.canvas.mpl_connect('pick_event', on_pick)
+# plt.show()
+            # np.zeros_like(calib_pic, dtype=float)
+
+            # cv.drawContours(img, contours, -1, (0,255,0), 3)
+
+    plt.show()
 
 
 def calibrate_geometry(core, raspi_controller, workdir):
     dmd_img_dir = os.path.join(workdir, "imgsfordmd")
     os.makedirs(dmd_img_dir, exist_ok=True)
 
+    print("Finding background black and white brightness levels")
     black_level, white_level = get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir)
 
 
     fit_transform_max_acceptable_camera_err = 10
 
-    circle_diameter = 19
+    circle_diameter = 101
     edge_margin = math.ceil(circle_diameter / 2)
 
-    grid_x_positions = np.arange(edge_margin, DMD_W - 1 - edge_margin, 70)
-    grid_y_positions = np.arange(edge_margin, DMD_H - 1 - edge_margin, 70)
+    grid_x_positions = np.arange(edge_margin, DMD_W - 1 - edge_margin, 300)
+    grid_y_positions = np.arange(edge_margin, DMD_H - 1 - edge_margin, 300)
 
     calibration_measurements = []
 
+    photo_arr = []
+    contours_arr = []
+
     for circle_dmd_y in grid_y_positions:
+        row_photos = []
+        row_contours = []
         for circle_dmd_x in grid_x_positions:
+            print("Calibrating for circle at x {}, y {} on dmd".format(circle_dmd_x, circle_dmd_y))
             marker_img_dmd = np.zeros( (DMD_H, DMD_W), dtype=float)
 
             draw_white_circle(marker_img_dmd, circle_diameter, circle_dmd_x, circle_dmd_y)
 
             circle_path = os.path.join(dmd_img_dir, "circle_calibration_marker.tiff")
             save_img_for_dmd(marker_img_dmd, circle_path)
-            raspi_controller.send_and_show_image_on_dmd(circle_path)
+            raspi_controller.send_image_to_feh(circle_path)
 
             circle_microphoto = take_micromanager_pic_as_float_arr(core)
 
-            found_cam_circles = find_circles_in_photo(circle_microphoto, black_level, white_level)
+            # found_cam_circles = find_circles_in_photo(circle_microphoto, black_level, white_level)
 
-            found_blobs = find_blobs_in_photo(circle_microphoto, black_level, white_level)
+            found_blobs, found_contours = find_blobs_in_photo(circle_microphoto, black_level, white_level)
 
-            calibration_measurements.push({
+            calibration_measurements.append({
                 "dmd_circle_x": circle_dmd_x,
                 'dmd_circle_y': circle_dmd_y,
                 "camera_detected_blobs": found_blobs,
             })
+            row_photos.append(circle_microphoto)
+            row_contours.append(found_contours)
+
+        photo_arr.append(row_photos)
+        contours_arr.append(row_contours)
+    
+    show_calibration_pics(photo_arr,  contours_arr)
 
     transformT, fitMaxErr = analyze_calibration_measurements(calibration_measurements)
 
@@ -336,7 +510,7 @@ def calibrate_geometry(core, raspi_controller, workdir):
 
     # @TODO account for feh latency?
 
-    # raspi_controller.send_and_show_image_on_dmd
+    # raspi_controller.send_image_to_feh
     # @TODO : ignore points that are less than half a radius from an edge of the camera field
     # @TODO test with  not enough points
 
@@ -354,10 +528,12 @@ def calibrate(
         core = bridge.get_core()
         raspi_controller = RaspiController(hostname, username, password)
 
+        raspi_controller.start_feh()
+
         try:
             calibrate_geometry(core, raspi_controller, workdir)
         except:
-            raspi_controller.stop_showing_image_on_dmd()
+            raspi_controller.kill_feh()
             raise
-        raspi_controller.stop_showing_image_on_dmd()
+        raspi_controller.kill_feh()
 

@@ -1,3 +1,7 @@
+# dmd work dir image stuff
+
+/dmdworkdir
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
