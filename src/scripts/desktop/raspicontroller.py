@@ -107,20 +107,26 @@ class RaspiController:
             remote_path_for_symlink,
         ))
         self.raise_exception_if_stderr_not_empty(stdout, stderr)
+        
+        print("Copied local image '{}' to Pi path '{}', with symlink to it at '{}'".format(local_image_path, remote_path_for_image, remote_path_for_symlink))
 
         # Remove symlink for old image, then on the next update feh should read from the new image
+        old_symlinkpath = self.remote_slideshow_symlinks_folder + "/" + self.tiffname_currently_on_pi
         stdin, stdout, stderr = self.ssh_client.exec_command("rm '{}'".format(
-            self.remote_slideshow_symlinks_folder + "/" + self.tiffname_currently_on_pi,
+            old_symlinkpath,
         ))
         self.raise_exception_if_stderr_not_empty(stdout, stderr)
 
         time.sleep(0.2)
 
+        old_imagepath = self.remote_image_folder + "/" + self.tiffname_currently_on_pi
         # Remove old file
         stdin, stdout, stderr = self.ssh_client.exec_command("rm '{}'".format(
-            self.remote_image_folder + "/" + self.tiffname_currently_on_pi
+            old_imagepath
         ))
         self.raise_exception_if_stderr_not_empty(stdout, stderr)
+
+        print("Removed old '{}' and '{}' from Pi", old_symlinkpath, old_imagepath)
 
         # Set tiffname_currently_on_pi to the new filename
         self.tiffname_currently_on_pi = new_tiff_name
@@ -129,7 +135,6 @@ class RaspiController:
         # Come up with path for new image. Shouldn't be the same as the previous one
 
         
-        print("Copied local image '{}' to Pi path '{}', with symlink to it at '{}'".format(local_image_path, remote_path_for_image, remote_path_for_symlink))
 
 
     def kill_feh(self):

@@ -6,6 +6,7 @@ import math
 import os
 import cv2
 from matplotlib import pyplot as plt
+from matplotlib.widgets import Button
 
 from .raspicontroller import RaspiController
 from .camera import take_micromanager_pic_as_float_arr
@@ -364,13 +365,17 @@ def analyze_calibration_measurements(calibration_measurements):
 
     return T, max_err
 
-def show_calibration_pics(photo_arr, contours_arr):
-    plt.clf()
+def show_calibration_pics(photo_arr, contours_arr, blobs_info_arr):
+    # plt.clf()
     num_y = len(photo_arr)
     num_x = len(photo_arr[0])
 
-    
-    lined = {}
+    # The event handler for a legend-line being toggled 
+    legendline_info = {}
+    # An array where we put all of the blob lines for each calibration image - this way we can look at it and 
+    # See which blobs have been toggled on/off
+    blobline_arr =  [[[] for x in range(num_x)] for y in range(num_y)]
+    crosshairs_arr = [[[] for x in range(num_x)] for y in range(num_y)]
 
     fig, axs = plt.subplots(num_y, num_x, figsize=(15,7))
     for row_idx in range(num_y):
@@ -385,40 +390,88 @@ def show_calibration_pics(photo_arr, contours_arr):
                 X,Y = np.array(c).T
                 X=X[0]
                 Y=Y[0]
-                # d
-                # print("X:",X.shape)
-                # print("Y:",Y.shape)
-                # print("Plotting a contour")
-                ax.plot( X, Y , linewidth=2,alpha=0.8, label="blob {}".format(i))
+                
+                blob_line = ax.plot( X, Y , linewidth=2,alpha=0.8, label="blob {}".format(i))[0]
+                blobline_arr[row_idx][col_idx].append(blob_line)
+
             lines = ax.get_lines()
             leg = ax.legend(bbox_to_anchor=(1.1,1), borderaxespad=0, loc="upper left")
             for legline, origline in zip(leg.get_lines(), lines):
                 legline.set_picker(True)
-                lined[legline] = origline
+                legendline_info[legline] = {
+                    "origline": origline,
+                    "row_idx": row_idx,
+                    "col_idx": col_idx,
+                }
+    
+    
+    # def add_crosshairs():
+    
+    # def remove_crosshairs():
+    def update_whether_crosshairs(row_idx, col_idx):
+        num_visible = 0
+        last_visible_blob_idx = None
+        # last_visible_blob = None
+        for i, blobline in enumerate(blobline_arr[row_idx][col_idx]):
+            if blobline.get_visible():
+                num_visible += 1
+                last_visible_blob_idx = i
+
+        ax = axs[row_idx][col_idx]
+        old_crosshairs = crosshairs_arr[row_idx][col_idx]
+
+        if len(old_crosshairs) != 0:
+            for line in old_crosshairs:
+                ax.lines.remove(line)
+        
+        #If there is only one visible blob, we plot crosshairs pointing to its center
+        if num_visible == 1:
+            blob_info = blobs_info_arr[row_idx][col_idx][last_visible_blob_idx]
+            blob_x = blob_info["centroid_x"]
+            blob_y = blob_info["centroid_y"]
             
+
+            vline = ax.axvline(blob_x, color='yellow', linewidth=0.8, alpha=0.5)
+            hline = ax.axhline(blob_y, color='yellow', linewidth=0.8, alpha=0.5)
+
+            crosshairs_arr[row_idx][col_idx] = [vline, hline]
+        else:
+            crosshairs_arr[row_idx][col_idx] = []
+            
+            # lines = ax.get_lines()
+
+
+            # plt.axvline(x = 7, color = 'b', label = 'axvline - full height')
+
 
     def on_pick(event):
         #On the pick event, find the original line corresponding to the legend
         #proxy line, and toggle its visibility.
         legline = event.artist
-        origline = lined[legline]
+        origline = legendline_info[legline]["origline"]
+        row_idx =  legendline_info[legline]["row_idx"]
+        col_idx =  legendline_info[legline]["col_idx"]
+
         visible = not origline.get_visible()
         origline.set_visible(visible)
         #Change the alpha on the line in the legend so we can see what lines
         #have been toggled.
         legline.set_alpha(1.0 if visible else 0.2)
+
+        # this determines whether there are crosshairs now
+        update_whether_crosshairs(row_idx, col_idx)
+
         fig.canvas.draw()
 
     fig.canvas.mpl_connect('pick_event', on_pick)
     # plt.show()
 
+    
+    for row_idx in range(num_y):
+        for col_idx in range(num_x):        
+            update_whether_crosshairs(row_idx, col_idx)
+
             
-#     lines = ax.get_lines()
-# leg = ax.legend(fancybox=True, shadow=True)
-# lined = {}  # Will map legend lines to original lines.
-# for legline, origline in zip(leg.get_lines(), lines):
-#     legline.set_picker(True)  # Enable picking on the legend line.
-#     lined[legline] = origline
 
 # def on_pick(event):
 
@@ -427,6 +480,18 @@ def show_calibration_pics(photo_arr, contours_arr):
             # np.zeros_like(calib_pic, dtype=float)
 
             # cv.drawContours(img, contours, -1, (0,255,0), 3)
+    fig.suptitle(
+        'Circles Detected\n'+
+        'Click on the lines in legends to toggle blobs on/off in order to remove incorrect detections of blobs or bad data points\n'+
+        'All extra blobs in a calibration image should be removed before continuing'
+    )
+
+    axprev = fig.add_axes([0.7, 0.05, 0.1, 0.075])
+    axnext = fig.add_axes([0.81, 0.05, 0.1, 0.075])
+    bnext = Button(axnext, 'Next')
+    # bnext.on_clicked(callback.next)
+    bprev = Button(axprev, 'Previous')
+# bprev.on_clicked(callback.prev)
 
     plt.show()
 
@@ -451,12 +516,15 @@ def calibrate_geometry(core, raspi_controller, workdir):
 
     photo_arr = []
     contours_arr = []
+    blobs_info_arr = []
 
     for circle_dmd_y in grid_y_positions:
         row_photos = []
         row_contours = []
+        row_blobs_info = []
+
         for circle_dmd_x in grid_x_positions:
-            print("Calibrating for circle at x {}, y {} on dmd".format(circle_dmd_x, circle_dmd_y))
+            print("Showing calibration circle at x {}, y {} on dmd".format(circle_dmd_x, circle_dmd_y))
             marker_img_dmd = np.zeros( (DMD_H, DMD_W), dtype=float)
 
             draw_white_circle(marker_img_dmd, circle_diameter, circle_dmd_x, circle_dmd_y)
@@ -467,8 +535,6 @@ def calibrate_geometry(core, raspi_controller, workdir):
 
             circle_microphoto = take_micromanager_pic_as_float_arr(core)
 
-            # found_cam_circles = find_circles_in_photo(circle_microphoto, black_level, white_level)
-
             found_blobs, found_contours = find_blobs_in_photo(circle_microphoto, black_level, white_level)
 
             calibration_measurements.append({
@@ -476,13 +542,16 @@ def calibrate_geometry(core, raspi_controller, workdir):
                 'dmd_circle_y': circle_dmd_y,
                 "camera_detected_blobs": found_blobs,
             })
+            
             row_photos.append(circle_microphoto)
             row_contours.append(found_contours)
+            row_blobs_info.append(found_blobs)
 
         photo_arr.append(row_photos)
         contours_arr.append(row_contours)
+        blobs_info_arr.append(row_blobs_info)
     
-    show_calibration_pics(photo_arr,  contours_arr)
+    show_calibration_pics(photo_arr,  contours_arr, blobs_info_arr)
 
     transformT, fitMaxErr = analyze_calibration_measurements(calibration_measurements)
 
