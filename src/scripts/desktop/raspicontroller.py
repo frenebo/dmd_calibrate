@@ -126,7 +126,7 @@ class RaspiController:
         ))
         self.raise_exception_if_stderr_not_empty(stdout, stderr)
 
-        print("Removed old '{}' and '{}' from Pi", old_symlinkpath, old_imagepath)
+        print("Removed old '{}' and '{}' from Pi".format( old_symlinkpath, old_imagepath))
 
         # Set tiffname_currently_on_pi to the new filename
         self.tiffname_currently_on_pi = new_tiff_name

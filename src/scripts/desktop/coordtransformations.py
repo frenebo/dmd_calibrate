@@ -5,9 +5,9 @@ import numpy as np
 def best_fit_affine_transform(dmd_coords, camera_coords):
     dmd_coords = np.array(dmd_coords)
     camera_coords = np.array(camera_coords)
+    
     assert dmd_coords.shape == camera_coords.shape, "dmd and camera coordinate arrays should have same shape"
-
-    assert dmd_coords.shape[0] == 2, "coord arrays should be (2xN)"
+    assert dmd_coords.shape[0] == 2, "coord arrays should be (2xN), instead got {}".format(dmd_coords.shape)
 
     N = dmd_coords.shape[1]
 
@@ -29,6 +29,7 @@ def best_fit_affine_transform(dmd_coords, camera_coords):
     return T
 
 def transform_camera_to_dmd_image(desired_cam_image, cam_to_dmd_Tmat):
+    raise NotImplementedError
     pass
 
 

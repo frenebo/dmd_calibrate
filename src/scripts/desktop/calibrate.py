@@ -5,6 +5,7 @@ import pycromanager
 import math
 import os
 import cv2
+import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Button
 
@@ -23,7 +24,7 @@ def save_img_for_dmd(np_float_img, path):
     assert np_float_img.dtype == float, "Image should be float array"
     assert np.all(np_float_img >= 0), "Image should have no negative brightness values"
     assert np.all(np_float_img <= 1), "Image should have no brightness values greater than 1"
-    assert np_float_img.shape == (DMD_H, DMD_W), "Numpy float image should have shape {}".format((DMD_H, DMD_W))
+    assert np_float_img.shape == (DMD_H, DMD_W), "Numpy float image should have shape {}, instead received  {}".format((DMD_H, DMD_W), np_float_img.shape)
 
     max_int16 =  np.iinfo(np.uint16).max
 
@@ -55,13 +56,6 @@ def draw_white_circle(np_float_img, diameter, center_x, center_y):
     # Convert to float
     circ_mask  = circ_mask.astype(float)
 
-    # Add white circle to brightness values
-    # print("center_x {}".format(center_x.shape))
-    # print("circ mask shape: {}".format(circ_mask.shape))
-    # print("coordinates for putting it: {}:{}, {}:{}".format(
-    #     center_x - rad,center_x + rad + 1, center_y - rad,center_y + rad + 1
-    # ))
-    # print("np image shape: {}".format(np_float_img.shape))
     np_float_img[center_y - rad:center_y + rad + 1, center_x - rad:center_x + rad + 1] += circ_mask
 
     # If the spot wasn't already white, then it'll have brightness more than 1.0 now - fix this here
@@ -81,10 +75,10 @@ def show_black_white_calibration_images(white_photos, black_photos, white_level,
         # Show image without ticks 
         axs[0][i].set_axis_off()
         img_ax = axs[0][i].imshow(white_photos[i], cmap='gray')
-        # plt.hist()
+        
         counts, bins = np.histogram(
             white_photos[i].flatten(),
-            bins=200,
+            bins=50,
             range=(hist_min, hist_max),
             )
         axs[1][i].stairs(counts, bins, fill=True, color='white')
@@ -101,7 +95,7 @@ def show_black_white_calibration_images(white_photos, black_photos, white_level,
 
         counts, bins = np.histogram(
             black_photos[i].flatten(),
-            bins=200,
+            bins=50,
             range=(hist_min, hist_max),
         )
         axs[3][i].stairs(counts, bins, fill=True, color='white')
@@ -161,28 +155,7 @@ def get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir):
     avg_white = np.average(all_white_samples, axis=0)
 
 
-    # # Just call the average pixel value in black images the black level
-    # black_level = np.average(avg_black)
-    # # And average pixel value in white images the white level
-    # white_level = np.average(avg_white)
-
-
-
     var_between_avg_black_and_white = np.average(np.var(np.array([avg_black, avg_white]), axis=0))
-
-    # Check that there is a statistical difference between datasets -
-    # This should show whether there is a detected difference between
-    # DMD "white screen" and "black screen"
-    if (
-        (var_within_black > max_relative_variance_rel_to_b_w_diff * var_between_avg_black_and_white) or
-        (var_within_white > max_relative_variance_rel_to_b_w_diff * var_between_avg_black_and_white)
-        ):
-        raise CalibrationException("Variance among calibration images is high compared to variance between average black image and average white image. Var within black calibration images: {} within white calibration images: {}. Var between average black and average white image: {}. Is the DMD on? When displaying a white image, is the projected image overlapping the area captured by the camera sensor? Is the exposure time long enough?".format(
-            var_within_black,
-            var_within_white,
-            var_between_avg_black_and_white,
-        ))
-    
 
     # If the dmd lit-up area only covers part of the image, we need to find the white level based on the area that is white.
     # averaged_black_img_field = np.mean(all_black_samples)
@@ -202,25 +175,23 @@ def get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir):
     black_level = mean_black_brightness
     white_level = np.average(avg_white[illuminated_section_mask])
 
-    show_black_white_calibration_images(white_photos, black_photos, white_level, black_level)
 
     print("white level: ", white_level)
 
-
-    # # In addition to checking the variance of black images relative to each other, make sure the average black image is more or less even.
-    # var_in_avg_black_img = np.var(avg_black)
-    # if var_in_avg_black_img > max_black_field_var_rel_to_b_w_diff * var_between_avg_black_and_white:
-    #     raise CalibrationException("The unevenness of the average black field is too high: variance within avg black calibration image is {}, compared to variance between average black and average white image: {}.".format(
-    #         var_in_avg_black_img,
-    #         var_between_avg_black_and_white,
-    #     ))
-
-    # var_in_avg_white_img = np.var(avg_white)
-    # if var_in_avg_white_img > max_white_field_var_rel_to_b_w_diff * var_between_avg_black_and_white:
-    #     raise CalibrationException("The unevenness of the average white field is too high: variance within avg white calibration image is {}, compared to variance between average black and average white image: {}.".format(
-    #         var_in_avg_white_img,
-    #         var_between_avg_black_and_white,
-    #     ))
+    show_black_white_calibration_images(white_photos, black_photos, white_level, black_level)
+    
+    # Check that there is a statistical difference between datasets -
+    # This should show whether there is a detected difference between
+    # DMD "white screen" and "black screen"
+    if (
+        (var_within_black > max_relative_variance_rel_to_b_w_diff * var_between_avg_black_and_white) or
+        (var_within_white > max_relative_variance_rel_to_b_w_diff * var_between_avg_black_and_white)
+        ):
+        raise CalibrationException("Variance among calibration images is high compared to variance between average black image and average white image. Var within black calibration images: {} within white calibration images: {}. Var between average black and average white image: {}. Is the DMD on? When displaying a white image, is the projected image overlapping the area captured by the camera sensor? Is the exposure time long enough?".format(
+            var_within_black,
+            var_within_white,
+            var_between_avg_black_and_white,
+        ))
 
     return black_level, white_level
 
@@ -240,9 +211,6 @@ def find_blobs_in_photo(np_float_img, black_level, white_level):
 
     found_blobs = []
     found_contours = []
-
-    # print(contours)
-
 
     for contour_i in range(len(contours)):
         contour = contours[contour_i]
@@ -265,13 +233,7 @@ def find_blobs_in_photo(np_float_img, black_level, white_level):
             )
 
         M = cv2.moments(contour)
-        # print("Contour: ", contour)
-        # print("Contour moments:")
-        # for k in M:
-        #     print("{}: {},".format(k,M[k]), end="")
-        # print("")
-        # print("Area: {}".format(area))
-        # print("Perimeter: {}".format(perimeter))
+
         cx = M["m10"]/M["m00"]
         cy = M["m01"]/M["m00"]
 
@@ -293,77 +255,34 @@ def find_blobs_in_photo(np_float_img, black_level, white_level):
     return found_blobs, found_contours
 
 def analyze_calibration_measurements(calibration_measurements):
-    categorized_measurements = {
-        "one_middle_blob": [],
-        "middle_blobs_and_boundary_blobs": [],
-        "only_boundary_blobs": [],
-        "no_blobs": [],
-    }
+    dmd_circle_coords = []
+    cam_circle_coords = []
+
 
     for datapt in calibration_measurements:
         dmd_circle_x = datapt["dmd_circle_x"]
         dmd_circle_y = datapt["dmd_circle_y"]
-        all_detected_blobs = datapt["camera_detected_blobs"]
-
-        middle_blobs = []
-        touching_edge_blobs =  []
-        for blob in all_detected_blobs:
-            if blob["touching_edge"]:
-                touching_edge_blobs.append(blob)
-            else:
-                middle_blobs.append(blob)
-
-        if len(all_detected_blobs) == 0:
-            categorized_measurements["no_blobs"].append(datapt)
-        else:
-            if len(middle_blobs) == 0:
-                categorized_measurements["only_boundary_blobs"].append(datapt)
-            elif len(touching_edge_blobs) == 0:
-                if len(middle_blobs) > 1:
-                    raise CalibrationException("Detected multiple possible circles when displaying a circle at DMD coordinates x={} y={}".format(dmd_circle_x, dmd_circle_y))
-                categorized_measurements["one_middle_blob"].append(datapt)
-            else:
-                categorized_measurements["middle_blobs_and_boundary_blobs"].append(datapt)
-
-    dmd_circle_coords = []
-    cam_circle_coords = []
-
-    if len(categorized_measurements["one_middle_blob"]) < min_good_points:
-        raise CalibrationException("Couldn't get enough circle measurements that were fully in camera field. Needed {}, got {}".format(
-            min_good_points,
-            len(categorized_measurements["one_middle_blob"])
-        ))
-
-    for datapt in categorized_measurements["one_middle_blob"]:
-        dmd_circle_x = datapt["dmd_circle_x"]
-        dmd_circle_y = datapt["dmd_circle_y"]
-        blob = datapt["camera_detected_blobs"][0]
+        blob = datapt["camera_detected_blob"]
 
         cam_circle_x = blob["centroid_x"]
         cam_circle_y = blob["centroid_y"]
 
-        dmd_circle_coords.push([dmd_circle_x, dmd_circle_y])
-        cam_circle_coords.push([cam_circle_x, cam_circle_y])
+        dmd_circle_coords.append([dmd_circle_x, dmd_circle_y])
+        cam_circle_coords.append([cam_circle_x, cam_circle_y])
 
     dmd_circle_coords = np.array(dmd_circle_coords).T
     cam_circle_coords = np.array(cam_circle_coords).T
 
-    best_fit_affine_transform(dmd_circle_coords, cam_circle_coords)
+    T = best_fit_affine_transform(dmd_circle_coords, cam_circle_coords)
 
-    raise NotImplementedError
+    # raise NotImplementedError
 
-    # for label in range(numLabels):
-    #     # If this blob corresponds to a dark region
-    #     if np.any((labels == 0) == np.logical_not(above_thresh)):
-    #         continue
-    #     # If this blob corresponds to a bright region, then continue to
-    #     x_min, y_min, width, height, area = stats[label]
-    #     centroid_x, centroid_y = centroids[label]
+    return T
 
-    rms = np.sqrt(np.average(np.square(pred_errors)))
-    max_err = np.max(pred_errors)
+    # rms = np.sqrt(np.average(np.square(pred_errors)))
+    # max_err = np.max(pred_errors)
 
-    return T, max_err
+    # return T, max_err
 
 def show_calibration_pics(photo_arr, contours_arr, blobs_info_arr):
     # plt.clf()
@@ -376,6 +295,11 @@ def show_calibration_pics(photo_arr, contours_arr, blobs_info_arr):
     # See which blobs have been toggled on/off
     blobline_arr =  [[[] for x in range(num_x)] for y in range(num_y)]
     crosshairs_arr = [[[] for x in range(num_x)] for y in range(num_y)]
+
+    # Start off with all blobs selected
+    selected_blob_indices = [[ [i for i in range(len(blobs_info_arr[y][x]))]  for x in range(num_x) ] for y in range(num_y)]
+
+    # pics_have_one_or_zero_selected_blobs = [[False for x in range(num_x)] for y in range(num_y)]
 
     fig, axs = plt.subplots(num_y, num_x, figsize=(15,7))
     for row_idx in range(num_y):
@@ -404,18 +328,20 @@ def show_calibration_pics(photo_arr, contours_arr, blobs_info_arr):
                     "col_idx": col_idx,
                 }
     
-    
-    # def add_crosshairs():
-    
-    # def remove_crosshairs():
-    def update_whether_crosshairs(row_idx, col_idx):
+    def update_calibration_image_crosshairs(row_idx, col_idx):
         num_visible = 0
         last_visible_blob_idx = None
-        # last_visible_blob = None
+        
+
+        selected_blob_indices[row_idx][col_idx] = []
         for i, blobline in enumerate(blobline_arr[row_idx][col_idx]):
             if blobline.get_visible():
                 num_visible += 1
                 last_visible_blob_idx = i
+                selected_blob_indices[row_idx][col_idx].append(i)
+        # print(selected_blob_indices)
+
+        
 
         ax = axs[row_idx][col_idx]
         old_crosshairs = crosshairs_arr[row_idx][col_idx]
@@ -423,27 +349,22 @@ def show_calibration_pics(photo_arr, contours_arr, blobs_info_arr):
         if len(old_crosshairs) != 0:
             for line in old_crosshairs:
                 ax.lines.remove(line)
-        
+
         #If there is only one visible blob, we plot crosshairs pointing to its center
         if num_visible == 1:
             blob_info = blobs_info_arr[row_idx][col_idx][last_visible_blob_idx]
             blob_x = blob_info["centroid_x"]
             blob_y = blob_info["centroid_y"]
             
-
             vline = ax.axvline(blob_x, color='yellow', linewidth=0.8, alpha=0.5)
             hline = ax.axhline(blob_y, color='yellow', linewidth=0.8, alpha=0.5)
 
             crosshairs_arr[row_idx][col_idx] = [vline, hline]
         else:
             crosshairs_arr[row_idx][col_idx] = []
-            
-            # lines = ax.get_lines()
-
-
-            # plt.axvline(x = 7, color = 'b', label = 'axvline - full height')
-
-
+        
+        update_submit_button_get_new_cid_or_none()
+    
     def on_pick(event):
         #On the pick event, find the original line corresponding to the legend
         #proxy line, and toggle its visibility.
@@ -459,41 +380,59 @@ def show_calibration_pics(photo_arr, contours_arr, blobs_info_arr):
         legline.set_alpha(1.0 if visible else 0.2)
 
         # this determines whether there are crosshairs now
-        update_whether_crosshairs(row_idx, col_idx)
+        update_calibration_image_crosshairs(row_idx, col_idx)
 
         fig.canvas.draw()
+    
+    submit_button_callback_cid = None
+    
+    submit_but_notready_text = "Each calibration image should only have 1 or 0 blobs selected before proceeding"
+
+    # In this function, it checks whether every calibration image has its extra blob detections removed
+    # If calibration blobs are ready, it enables the button, and adds the callback
+    # If not ready, it disables, and removes the previous callback if it exists (we stored its cid in a variable)
+    def update_submit_button_get_new_cid_or_none():
+        nonlocal submit_button_callback_cid
+
+        for y in range(num_y):
+            for x in range(num_x):
+                if len(selected_blob_indices[y][x]) > 1:
+                    if submit_button_callback_cid is not None:
+                        submit_but.label.set_text(submit_but_notready_text)
+                        submit_but.disconnect(submit_button_callback_cid)
+                        submit_button_callback_cid = None
+                    return
+        
+        if submit_button_callback_cid is None:
+            submit_but.label.set_text('Click to submit')
+            submit_button_callback_cid = submit_but.on_clicked(close_graph)
+    
+    def close_graph(ev):
+        plt.close('all')
 
     fig.canvas.mpl_connect('pick_event', on_pick)
-    # plt.show()
 
-    
-    for row_idx in range(num_y):
-        for col_idx in range(num_x):        
-            update_whether_crosshairs(row_idx, col_idx)
-
-            
-
-# def on_pick(event):
-
-# fig.canvas.mpl_connect('pick_event', on_pick)
-# plt.show()
-            # np.zeros_like(calib_pic, dtype=float)
-
-            # cv.drawContours(img, contours, -1, (0,255,0), 3)
     fig.suptitle(
         'Circles Detected\n'+
         'Click on the lines in legends to toggle blobs on/off in order to remove incorrect detections of blobs or bad data points\n'+
         'All extra blobs in a calibration image should be removed before continuing'
     )
 
-    axprev = fig.add_axes([0.7, 0.05, 0.1, 0.075])
-    axnext = fig.add_axes([0.81, 0.05, 0.1, 0.075])
-    bnext = Button(axnext, 'Next')
-    # bnext.on_clicked(callback.next)
-    bprev = Button(axprev, 'Previous')
-# bprev.on_clicked(callback.prev)
+    axnext = fig.add_axes([0.2, 0.05, 0.6, 0.065])
+
+    submit_but = Button(axnext, submit_but_notready_text)
+    
+    for row_idx in range(num_y):
+        for col_idx in range(num_x):        
+            update_calibration_image_crosshairs(row_idx, col_idx)
 
     plt.show()
+
+    # If user closes matplotlib window without narrowing down the choices of calibration detected blobs, we can't proceed
+    if submit_button_callback_cid is None:
+        raise Exception("Cannot close window without eliminating extra blobs from calibration images. Try again")
+    
+    return selected_blob_indices
 
 
 def calibrate_geometry(core, raspi_controller, workdir):
@@ -512,18 +451,24 @@ def calibrate_geometry(core, raspi_controller, workdir):
     grid_x_positions = np.arange(edge_margin, DMD_W - 1 - edge_margin, 300)
     grid_y_positions = np.arange(edge_margin, DMD_H - 1 - edge_margin, 300)
 
-    calibration_measurements = []
+    num_y = len(grid_y_positions)
+    num_x = len(grid_x_positions)
 
     photo_arr = []
     contours_arr = []
     blobs_info_arr = []
 
-    for circle_dmd_y in grid_y_positions:
+
+
+    for y_idx in range(num_y):
         row_photos = []
         row_contours = []
         row_blobs_info = []
 
-        for circle_dmd_x in grid_x_positions:
+        for x_idx in range(num_x):
+            circle_dmd_x = grid_x_positions[x_idx]
+            circle_dmd_y = grid_y_positions[y_idx]
+
             print("Showing calibration circle at x {}, y {} on dmd".format(circle_dmd_x, circle_dmd_y))
             marker_img_dmd = np.zeros( (DMD_H, DMD_W), dtype=float)
 
@@ -537,11 +482,11 @@ def calibrate_geometry(core, raspi_controller, workdir):
 
             found_blobs, found_contours = find_blobs_in_photo(circle_microphoto, black_level, white_level)
 
-            calibration_measurements.append({
-                "dmd_circle_x": circle_dmd_x,
-                'dmd_circle_y': circle_dmd_y,
-                "camera_detected_blobs": found_blobs,
-            })
+            # calibration_measurements.append({
+            #     "dmd_circle_x": circle_dmd_x,
+            #     'dmd_circle_y': circle_dmd_y,
+            #     "camera_detected_blobs": found_blobs,
+            # })
             
             row_photos.append(circle_microphoto)
             row_contours.append(found_contours)
@@ -551,20 +496,57 @@ def calibrate_geometry(core, raspi_controller, workdir):
         contours_arr.append(row_contours)
         blobs_info_arr.append(row_blobs_info)
     
-    show_calibration_pics(photo_arr,  contours_arr, blobs_info_arr)
+    # 2D Array of which blobs 
+    calibration_blob_selections = show_calibration_pics(photo_arr,  contours_arr, blobs_info_arr)
+    print(calibration_blob_selections)
 
-    transformT, fitMaxErr = analyze_calibration_measurements(calibration_measurements)
+    selected_calibration_measurements = []
+    for y_idx in range(num_y):
+        for x_idx in range(num_x):
+            circle_dmd_x = grid_x_positions[x_idx]
+            circle_dmd_y = grid_y_positions[y_idx]
 
-    if fitMaxErr > fit_transform_max_acceptable_camera_err:
-        raise CalibrationException("The best fit transformation for dmd and camera coordinates predicts incorrect camera coordinates by {}, more than the max acceptable value of {}".format(
-            fitMaxErr,
-            fit_transform_max_acceptable_camera_err
-        ))
+            for blob_idx in calibration_blob_selections[y_idx][x_idx]:
+                selected_calibration_measurements.append({
+                    "dmd_circle_x": circle_dmd_x,
+                    "dmd_circle_y": circle_dmd_y,
+                    "camera_detected_blob": blobs_info_arr[y_idx][x_idx][blob_idx],
+                })
+    # print(selected_calibration_measurements)
+
+    transformT = analyze_calibration_measurements(selected_calibration_measurements)
+    cam_dims = photo_arr[0][0].shape
+
+    desired_cam_image = np.zeros( cam_dims, dtype=float)
+    desired_cam_image[3*cam_dims[0]//8:5*cam_dims[0]//8, cam_dims[1]//4:3*cam_dims[1]//4] = 1.0
 
 
-    dmdToCam2x3 = np.zeros((2,3))
-    dmdToCam2x3[0:2,0:2] = transformA
-    dmdToCam2x3[0:2,2:3] = transformb
+
+
+
+
+    img_to_show = cv2.warpAffine(desired_cam_image, transformT, (DMD_W, DMD_H), flags=cv2.WARP_INVERSE_MAP)
+    test_img_path = os.path.join(dmd_img_dir, "circle_calibration_marker.tiff")
+    save_img_for_dmd(img_to_show, test_img_path)
+    raspi_controller.send_image_to_feh(test_img_path)
+    input("enter any input to close program. You can check out the pattern in micromanager now")
+
+
+
+    # draw
+
+    
+
+    # if fitMaxErr > fit_transform_max_acceptable_camera_err:
+    #     raise CalibrationException("The best fit transformation for dmd and camera coordinates predicts incorrect camera coordinates by {}, more than the max acceptable value of {}".format(
+    #         fitMaxErr,
+    #         fit_transform_max_acceptable_camera_err
+    #     ))
+
+
+    # dmdToCam2x3 = np.zeros((2,3))
+    # dmdToCam2x3[0:2,0:2] = transformA
+    # dmdToCam2x3[0:2,2:3] = transformb
 
 
     # dmdToCam3x3 = np.zeros((3,3))
