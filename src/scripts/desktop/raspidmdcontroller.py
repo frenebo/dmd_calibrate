@@ -3,7 +3,7 @@ import json
 import time
 import os
 
-class RaspiController:
+class RaspiDmdController:
     def __init__(self, hostname, username, password):
         self.ssh_client =paramiko.SSHClient()
         self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -19,7 +19,7 @@ class RaspiController:
 
         self._feh_running = False
     
-    def raise_exception_if_stderr_not_empty(self, stdout, stderr):
+    def _raise_exception_if_stderr_not_empty(self, stdout, stderr):
         script_output = stdout.readlines()
         script_err = stderr.readlines()
         
@@ -36,19 +36,19 @@ class RaspiController:
         
         # Make directory for slideshow symlinks to images, if it doesn't exist already
         stdin, stdout, stderr = self.ssh_client.exec_command("mkdir -p '{}'".format(self.remote_slideshow_symlinks_folder))
-        self.raise_exception_if_stderr_not_empty(stdout, stderr)
+        self._raise_exception_if_stderr_not_empty(stdout, stderr)
 
         # Make directory for image files themselves, if it doesn't exist already
         stdin, stdout, stderr = self.ssh_client.exec_command("mkdir -p '{}'".format(self.remote_image_folder))
-        self.raise_exception_if_stderr_not_empty(stdout, stderr)
+        self._raise_exception_if_stderr_not_empty(stdout, stderr)
 
         # Clear out symlink directory in case it has leftover files from before
         stdin, stdout, stderr = self.ssh_client.exec_command("rm '{}'/*".format(self.remote_slideshow_symlinks_folder))
-        self.raise_exception_if_stderr_not_empty(stdout, stderr)
+        self._raise_exception_if_stderr_not_empty(stdout, stderr)
         
         # Clear out image file directory in case it has leftover files from before
         stdin, stdout, stderr = self.ssh_client.exec_command("rm '{}'/*".format(self.remote_image_folder))
-        self.raise_exception_if_stderr_not_empty(stdout, stderr)
+        self._raise_exception_if_stderr_not_empty(stdout, stderr)
         
         # Make placeholder with ImageMagick's convert command
         # Put placeholder image in image folder and symlink in slideshow folder, so feh program doesn't exit 
@@ -60,10 +60,10 @@ class RaspiController:
         placeholder_command = "convert -size 100x100 xc:black '{}'".format(placeholder_tiff_path)
         print("Creating placeholder image: {}".format(placeholder_command))
         stdin, stdout, stderr = self.ssh_client.exec_command(placeholder_command)
-        self.raise_exception_if_stderr_not_empty(stdout, stderr)
+        self._raise_exception_if_stderr_not_empty(stdout, stderr)
 
         stdin, stdout, stderr = self.ssh_client.exec_command("ln -fs '{}' '{}'".format(placeholder_tiff_path, placeholder_symlink_path))
-        self.raise_exception_if_stderr_not_empty(stdout, stderr)
+        self._raise_exception_if_stderr_not_empty(stdout, stderr)
         self.tiffname_currently_on_pi = placeholder_tiff_name
 
         # Execute command and detach
@@ -106,7 +106,7 @@ class RaspiController:
             remote_path_for_image,
             remote_path_for_symlink,
         ))
-        self.raise_exception_if_stderr_not_empty(stdout, stderr)
+        self._raise_exception_if_stderr_not_empty(stdout, stderr)
         
         print("Copied local image '{}' to Pi path '{}', with symlink to it at '{}'".format(local_image_path, remote_path_for_image, remote_path_for_symlink))
 
@@ -115,7 +115,7 @@ class RaspiController:
         stdin, stdout, stderr = self.ssh_client.exec_command("rm '{}'".format(
             old_symlinkpath,
         ))
-        self.raise_exception_if_stderr_not_empty(stdout, stderr)
+        self._raise_exception_if_stderr_not_empty(stdout, stderr)
 
         time.sleep(0.2)
 
@@ -124,7 +124,7 @@ class RaspiController:
         stdin, stdout, stderr = self.ssh_client.exec_command("rm '{}'".format(
             old_imagepath
         ))
-        self.raise_exception_if_stderr_not_empty(stdout, stderr)
+        self._raise_exception_if_stderr_not_empty(stdout, stderr)
 
         print("Removed old '{}' and '{}' from Pi".format( old_symlinkpath, old_imagepath))
 
@@ -134,14 +134,12 @@ class RaspiController:
 
         # Come up with path for new image. Shouldn't be the same as the previous one
 
-        
-
 
     def kill_feh(self):
         # if not self._feh
         stdin, stdout, stderr = self.ssh_client.exec_command("pkill feh")
         
-        self.raise_exception_if_stderr_not_empty(stdout, stderr)
+        self._raise_exception_if_stderr_not_empty(stdout, stderr)
         
         self._feh_running = False
         print("Killed feh")

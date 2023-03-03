@@ -5,7 +5,7 @@ import numpy as np
 def best_fit_affine_transform(dmd_coords, camera_coords):
     dmd_coords = np.array(dmd_coords)
     camera_coords = np.array(camera_coords)
-    
+
     assert dmd_coords.shape == camera_coords.shape, "dmd and camera coordinate arrays should have same shape"
     assert dmd_coords.shape[0] == 2, "coord arrays should be (2xN), instead got {}".format(dmd_coords.shape)
 
@@ -75,12 +75,6 @@ def test_transformation():
 
     fitA = fitT[:,:2]
     fitb = fitT[:,2:3]
-    # print("A:")
-    # print(A)
-    # print(fitA)
-    # print("b:")
-    # print(b)
-    # print(fitb)
 
     predX, predY = fitA @ points + fitb[:, None]
 
@@ -89,6 +83,3 @@ def test_transformation():
     plt.scatter(predX, predY, color='r')
     plt.show()
 
-
-if __name__ == "__main__":
-    test_transformation()

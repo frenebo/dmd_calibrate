@@ -9,7 +9,7 @@ import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Button
 
-from .raspicontroller import RaspiController
+from .raspidmdcontroller import RaspiDmdController
 from .camera import take_micromanager_pic_as_float_arr
 from .coordtransformations import best_fit_affine_transform
 
@@ -18,7 +18,6 @@ from ..constants import DMD_W,  DMD_H
 # When calibration doesn't work right
 class CalibrationException(Exception):
     pass
-
 
 def save_img_for_dmd(np_float_img, path):
     assert np_float_img.dtype == float, "Image should be float array"
@@ -32,7 +31,6 @@ def save_img_for_dmd(np_float_img, path):
 
 
     tifffile.imwrite(path, np_int8_img)
-
 
 def draw_white_circle(np_float_img, diameter, center_x, center_y):
     assert np_float_img.dtype == float, "Image should be float array"
@@ -275,14 +273,7 @@ def analyze_calibration_measurements(calibration_measurements):
 
     T = best_fit_affine_transform(dmd_circle_coords, cam_circle_coords)
 
-    # raise NotImplementedError
-
     return T
-
-    # rms = np.sqrt(np.average(np.square(pred_errors)))
-    # max_err = np.max(pred_errors)
-
-    # return T, max_err
 
 def show_calibration_pics(photo_arr, contours_arr, blobs_info_arr):
     # plt.clf()
@@ -434,7 +425,6 @@ def show_calibration_pics(photo_arr, contours_arr, blobs_info_arr):
     
     return selected_blob_indices
 
-
 def calibrate_geometry(core, raspi_controller, workdir):
     dmd_img_dir = os.path.join(workdir, "imgsfordmd")
     os.makedirs(dmd_img_dir, exist_ok=True)
@@ -482,12 +472,6 @@ def calibrate_geometry(core, raspi_controller, workdir):
 
             found_blobs, found_contours = find_blobs_in_photo(circle_microphoto, black_level, white_level)
 
-            # calibration_measurements.append({
-            #     "dmd_circle_x": circle_dmd_x,
-            #     'dmd_circle_y': circle_dmd_y,
-            #     "camera_detected_blobs": found_blobs,
-            # })
-            
             row_photos.append(circle_microphoto)
             row_contours.append(found_contours)
             row_blobs_info.append(found_blobs)
@@ -531,42 +515,6 @@ def calibrate_geometry(core, raspi_controller, workdir):
     raspi_controller.send_image_to_feh(test_img_path)
     input("enter any input to close program. You can check out the pattern in micromanager now")
 
-
-
-    # draw
-
-    
-
-    # if fitMaxErr > fit_transform_max_acceptable_camera_err:
-    #     raise CalibrationException("The best fit transformation for dmd and camera coordinates predicts incorrect camera coordinates by {}, more than the max acceptable value of {}".format(
-    #         fitMaxErr,
-    #         fit_transform_max_acceptable_camera_err
-    #     ))
-
-
-    # dmdToCam2x3 = np.zeros((2,3))
-    # dmdToCam2x3[0:2,0:2] = transformA
-    # dmdToCam2x3[0:2,2:3] = transformb
-
-
-    # dmdToCam3x3 = np.zeros((3,3))
-    # dmdToCam3x3[0:2,0:2] = transformA
-    # dmdToCam3x3[0:2,2:3] = transformb
-    # dmdToCam3x3[2,2] = 1.0
-
-    # camToDmd3x3 = np.linalg.inv(dmdToCam3x3)
-
-
-
-
-    # @TODO account for feh latency?
-
-    # raspi_controller.send_image_to_feh
-    # @TODO : ignore points that are less than half a radius from an edge of the camera field
-    # @TODO test with  not enough points
-
-    pass
-
 def calibrate(
     hostname,
     username,
@@ -577,7 +525,7 @@ def calibrate(
 
     with pycromanager.Bridge() as bridge:
         core = bridge.get_core()
-        raspi_controller = RaspiController(hostname, username, password)
+        raspi_controller = RaspiDmdController(hostname, username, password)
 
         raspi_controller.start_feh()
 
