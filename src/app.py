@@ -21,6 +21,9 @@ class Messages:
     connecting_to_micro = "Trying to connect to Micromanager on port 4827"
     not_connected_to_micro = "Not connected"
     button_label_connect_to_micro = "Connect to Micromanager"
+    raspi_sec_title = "Raspi (DMD video source)"
+    not_connected_to_raspi = "Not connected"
+    button_label_connect_raspi = "Connect to Raspi"
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -46,6 +49,22 @@ class MainWindow(QMainWindow):
         pycroVLayout.addWidget(self.connectToPycroButton)
 
         hlayout.addWidget(pycroWidget)
+        
+        raspiWidget = QWidget()
+        raspiVLayout = QVBoxLayout()
+        raspiWidget.setLayout(raspiVLayout)
+        
+        raspiTitleWidget = QLabel(Messages.raspi_sec_title)
+        raspiTitleWidget.setFont(QFont("Arial", 20))
+        raspiVLayout.addWidget(raspiTitleWidget)
+        
+        self.raspiStatusLabelWidget = QLabel(Messages.not_connected_to_raspi)
+        raspiVLayout.addWidget(self.raspiStatusLabelWidget)
+        
+        self.connectToRaspiButton = QPushButton(Messages.button_label_connect_raspi)
+        raspiVLayout.addWidget(self.connectToRaspiButton)
+        
+        hlayout.addWidget(raspiWidget)
 
         widget = QWidget()
         widget.setLayout(hlayout)
