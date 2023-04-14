@@ -9,7 +9,7 @@ import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Button
 
-from .raspidmdcontroller import RaspiDmdController
+from .raspiinterface import RaspiInterface
 from .camera import take_micromanager_pic_as_float_arr
 from .coordtransformations import best_fit_affine_transform
 
@@ -526,7 +526,7 @@ def calibrate(
 
     with pycromanager.Bridge() as bridge:
         core = bridge.get_core()
-        raspi_controller = RaspiDmdController(hostname, username, password)
+        raspi_controller = RaspiInterface(hostname, username, password)
 
         raspi_controller.start_feh()
 

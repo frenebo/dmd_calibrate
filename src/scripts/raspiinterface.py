@@ -3,16 +3,21 @@ import json
 import time
 import os
 
-class RaspiDmdController:
+class RaspiConnectionError(Exception):
+    pass
+
+class RaspiInterface:
     def __init__(self, hostname, username, password):
-        self.ssh_client =paramiko.SSHClient()
+        self.ssh_client = paramiko.SSHClient()
         self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.ssh_client.connect(hostname=hostname,username=username,password=password)
         
-
-
+        try:
+            self.ssh_client.connect(hostname=hostname, username=username, password=password)
+        except Exception as e:
+            raise RaspiConnectionError(str(e))
+            
+        
         self.tiffname_currently_on_pi = None
-        # self.prev_tiffname = 
         self.remote_image_folder = "/home/pi/Pictures/pics_to_show_files"
         self.remote_slideshow_symlinks_folder = "/home/pi/Pictures/slideshow_symlinks"
         self.sent_image_name_counter = 1
@@ -28,7 +33,6 @@ class RaspiDmdController:
             text_stdout = "".join(script_output)
             raise Exception("Error with pi program:\nstderr:\n"+text_stderr+"\nstdout:\n" + text_stdout)
 
-    
     def start_feh(self):
         if self._feh_running:
             print("Already started feh, ignoring start_feh function call")
@@ -133,7 +137,6 @@ class RaspiDmdController:
 
 
         # Come up with path for new image. Shouldn't be the same as the previous one
-
 
     def kill_feh(self):
         # if not self._feh
