@@ -6,6 +6,8 @@ from PyQt6.QtWidgets import (
     QLabel,
     QVBoxLayout,
     QHBoxLayout,
+    QDialog,
+    QDialogButtonBox,
 )
 
 from PyQt6.QtGui import (
@@ -16,14 +18,38 @@ from PyQt6.QtCore import QSize, Qt
 
 import pycromanager
 
+from scripts.pycrointerface import PycroInterface, PycroConnectionError
+
 class Messages:
     micro_sec_title = "Micromanager"
     connecting_to_micro = "Trying to connect to Micromanager on port 4827"
     not_connected_to_micro = "Not connected"
+    connected_to_micro = "Connected"
     button_label_connect_to_micro = "Connect to Micromanager"
+    micro_connection_failed = "Micromanager connection failed"
     raspi_sec_title = "Raspi (DMD video source)"
     not_connected_to_raspi = "Not connected"
     button_label_connect_raspi = "Connect to Raspi"
+
+class ConnectionErrorDialog(QDialog):
+    def __init__(self, text):
+        super().__init__()
+
+        self.setWindowTitle("Connection Failed")
+
+        
+        QBtn = QDialogButtonBox.StandardButton.Ok
+
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        # self.buttonBox.rejected.connect(self.reject)
+
+        self.layout = QVBoxLayout()
+        message = QLabel(text)
+        self.layout.addWidget(message)
+        self.layout.addWidget(self.buttonBox)
+        self.setLayout(self.layout)
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -46,6 +72,7 @@ class MainWindow(QMainWindow):
         pycroVLayout.addWidget(self.pycroStatusLabelWidget)
 
         self.connectToPycroButton = QPushButton(Messages.button_label_connect_to_micro)
+        self.connectToPycroButton.clicked.connect(self.pycroConnectButtonClicked)
         pycroVLayout.addWidget(self.connectToPycroButton)
 
         hlayout.addWidget(pycroWidget)
@@ -70,9 +97,19 @@ class MainWindow(QMainWindow):
         widget.setLayout(hlayout)
 
         self.setCentralWidget(widget)
+
+        self.pycroInterface = None
     
     def pycroConnectButtonClicked(self):
-        print("clicked")
+        # dlg = ConnectionErrorDialog("asdfasdf")
+        # dlg.exec()
+        try:
+            self.pycroInterface = PycroInterface()
+
+            self.pycroStatusLabelWidget.setText(Messages.connected_to_micro)
+        except PycroConnectionError as e:
+            dlg = ConnectionErrorDialog(Messages.micro_connection_failed + ": " + str(e))
+            dlg.exec()
 
 
 if __name__ == "__main__":

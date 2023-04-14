@@ -13,7 +13,8 @@ from .raspidmdcontroller import RaspiDmdController
 from .camera import take_micromanager_pic_as_float_arr
 from .coordtransformations import best_fit_affine_transform
 
-from ..constants import DMD_W,  DMD_H
+DMD_H = 800
+DMD_W = 1280
 
 # When calibration doesn't work right
 class CalibrationException(Exception):
