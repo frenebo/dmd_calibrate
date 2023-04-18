@@ -14,7 +14,7 @@ class RaspiInterface:
         try:
             self.ssh_client.connect(hostname=hostname, username=username, password=password)
         except Exception as e:
-            raise RaspiConnectionError(str(e))
+            raise RaspiConnectionError("SSH connection: {}".format(str(e)))
             
         
         self.tiffname_currently_on_pi = None
