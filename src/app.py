@@ -12,12 +12,15 @@ from PyQt6.QtWidgets import (
 )
 
 from PyQt6.QtGui import (
+    QPixmap,
     QFont,
+    QPainter,
 )
 
 from PyQt6.QtCore import QSize, Qt
 
 import pycromanager
+from PIL import Image
 
 from scripts.pycrointerface import PycroInterface, PycroConnectionError
 from scripts.raspiinterface import RaspiInterface, RaspiConnectionError
@@ -84,6 +87,47 @@ class ConnectionErrorDialog(QDialog):
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
 
+
+class DmdCalibrationWindow(QDialog):
+    def __init__(self, pycroInterface, raspiInterface):
+        super().__init__()
+
+        self.setWindowTitle("Dmd Calibration")
+
+        self.vlayout = QVBoxLayout()
+
+        self.imgLabel = QLabel()
+        canvas = QPixmap(400, 300)
+        canvas.fill(Qt.GlobalColor.white)
+        self.imgLabel.setPixmap(canvas)
+        self.vlayout.addWidget(self.imgLabel)
+
+        self.setLayout(self.vlayout)
+        
+        self.pycroInterface = pycroInterface
+        self.raspiInterface = raspiInterface
+
+        self.calibrate()
+    
+    def calibrate(self):
+        self.pycroInterface.set_imaging_settings_for_acquisition(
+            multishutter_preset="NoMembers",
+            sapphire_on_override="on",
+            exposure_ms=100,
+            sapphire_setpoint="110",
+            )
+        pic = self.pycroInterface.snap_pic()
+        print("took pic!")
+
+        self.draw_something()
+
+    def draw_something(self):
+        canvas = self.imgLabel.pixmap()
+        painter = QPainter(canvas)
+        painter.drawLine(10, 10, 300, 200)
+        painter.end()
+        self.imgLabel.setPixmap(canvas)
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -136,7 +180,10 @@ class MainWindow(QMainWindow):
         
         self.calibrateDmdGeometryButton = QPushButton(Messages.button_label_calibrate_dmd)
         self.calibrateDmdGeometryButton.setEnabled(False)
+        self.calibrateDmdGeometryButton.clicked.connect(self.calibrateDmdButtonClicked)
         topVLayout.addWidget(self.calibrateDmdGeometryButton)
+        
+        
         
         
         
@@ -147,6 +194,15 @@ class MainWindow(QMainWindow):
 
         self.pycroInterface = None
         self.raspiInterface = None
+    
+    def calibrateDmdButtonClicked(self):
+        print("Calibrating dmd")
+        dmdcalibrationdialog = DmdCalibrationWindow(self.pycroInterface, self.raspiInterface)
+        dmdcalibrationdialog.exec()
+        
+        # self.core.snap_image()
+        # tagged_image = self.core.get_tagged_image()
+
     
     def pycroConnectButtonClicked(self):
         try:
