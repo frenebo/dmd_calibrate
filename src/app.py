@@ -25,10 +25,10 @@ import pyqtgraph as pg
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
+import sys
 
-
-from scripts.pycrointerface import PycroInterface, PycroConnectionError
-from scripts.raspiinterface import RaspiInterface, RaspiConnectionError
+from scripts.pycrointerface import StandInPycroInterface, PycroInterface, PycroConnectionError
+from scripts.raspiinterface import StandInRaspiInterface, RaspiInterface, RaspiConnectionError
 
 class Messages:
     micro_sec_title = "Micromanager"
@@ -51,6 +51,7 @@ class Messages:
     begin = "Begin"
     enter_raspi_ssh_login_creds = "Enter Raspi SSH login Credentials"
     connection_failed_title = "Connection Failed"
+    invalid_field_title = "Invalid Field"
 
 class RaspiCredsDialog(QDialog):
     def __init__(self):
@@ -79,7 +80,7 @@ class RaspiCredsDialog(QDialog):
         
         self.setLayout(self.layout)
 
-class ConnectionErrorDialog(QDialog):
+class ErrorDialog(QDialog):
     def __init__(self, title, text):
         super().__init__()
 
@@ -130,15 +131,14 @@ class DmdCalibrationWindow(QDialog):
 
     def begin_button_clicked(self):
         widgetTxt = self.exposureMsWidget.text()
-
-        # def isfloat(num):
+        
         try:
             exposureFlt = float(widgetTxt)
-            # return True
         except ValueError:
-            dlg = InvalidValueDialog("Can't parse '{}' as floating point number".format(widgetTxt))
+            dlg = ErrorDialog(Messages.invalid_field_title, "Can't parse '{}' as floating point number".format(widgetTxt))
             dlg.exec()
             return
+        
             
         print(widgetTxt)
 
@@ -161,8 +161,9 @@ class DmdCalibrationWindow(QDialog):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, useStandIns=False):
         super().__init__()
+        self.useStandIns = useStandIns
 
         self.setWindowTitle("Dmd Acquisition Tool")
 
@@ -241,7 +242,10 @@ class MainWindow(QMainWindow):
     
     def pycroConnectButtonClicked(self):
         try:
-            self.pycroInterface = PycroInterface()
+            if self.useStandIns:
+                self.pycroInterface = StandInPycroInterface()
+            else:
+                self.pycroInterface = PycroInterface()
             
             # if success
             self.pycroStatusLabelWidget.setText(Messages.connected_to_micro)
@@ -255,7 +259,7 @@ class MainWindow(QMainWindow):
             self.pycroStatusLabelWidget.setStyleSheet('background-color: yellow')
             self.connectToPycroButton.setEnabled(True)
             
-            dlg = ConnectionErrorDialog(Messages.connection_failed_title, Messages.micro_connection_failed + ": " + str(e))
+            dlg = ErrorDialog(Messages.connection_failed_title, Messages.micro_connection_failed + ": " + str(e))
             dlg.exec()
         
         self.updateOptions()
@@ -278,12 +282,15 @@ class MainWindow(QMainWindow):
             fielderr = Messages.enter_a_password
         
         if fielderr is not None:
-            dlg = ConnectionErrorDialog(fielderr)
+            dlg = ErrorDialog(Messages.invalid_field_title, fielderr)
             dlg.exec()
             return
         
         try:
-            self.raspiInterface = RaspiInterface(hostname, username, password)
+            if self.useStandIns:
+                self.raspiInterface = StandInRaspiInterface(hostname, username, password)
+            else:
+                self.raspiInterface = RaspiInterface(hostname, username, password)
             
             # if success
             self.raspiStatusLabelWidget.setText(Messages.connected_to_raspi)
@@ -296,7 +303,7 @@ class MainWindow(QMainWindow):
             self.raspiStatusLabelWidget.setStyleSheet('background-color: yellow')
             self.connectToRaspiButton.setEnabled(True)
             
-            dlg = ConnectionErrorDialog(Messages.connection_failed_title, Messages.raspi_connection_failed + ": " + str(e))
+            dlg = ErrorDialog(Messages.connection_failed_title, Messages.raspi_connection_failed + ": " + str(e))
             dlg.exec()
         
         self.updateOptions()
@@ -312,8 +319,14 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication([])
+    print(sys.argv)
+    if len(sys.argv) >= 2 and sys.argv[1] == "standins":
+        useStandIns = True
+    else:
+        useStandIns = False
+    # useStandIns = (sys.argv[1]=="standins")
 
-    window = MainWindow()
+    window = MainWindow(useStandIns=useStandIns)
     window.show()
 
     app.exec()

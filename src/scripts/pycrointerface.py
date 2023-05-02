@@ -4,6 +4,28 @@ import numpy as np
 class PycroConnectionError(Exception):
     pass
 
+class StandInPycroInterface:
+    def __init__(self):
+        pass
+    
+    def snap_pic(self):
+        dat = np.zeros((2000,2000), dtype=np.uint16)
+        dat[500:1500,500:1500] = 2000
+        return dat
+        
+    
+    
+    def set_imaging_settings_for_acquisition(
+        self,
+        auto_shutter=True,
+        binning="1x1",
+        multishutter_preset="LightEngineOnly",
+        sapphire_on_override="off",
+        sapphire_setpoint="10",
+        exposure_ms=10,
+    ):
+        pass
+    # def check_camera_res
 
 class PycroInterface:
     filt_group_presets = ["000", "060", "120", "180", "240", "300"]

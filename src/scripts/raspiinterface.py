@@ -5,6 +5,12 @@ import os
 
 class RaspiConnectionError(Exception):
     pass
+    
+
+class StandInRaspiInterface:
+    def __init__(self, hostname, username, password):
+        pass
+    # def 
 
 class RaspiInterface:
     def __init__(self, hostname, username, password):
