@@ -21,6 +21,11 @@ from PyQt6.QtCore import QSize, Qt
 
 import pycromanager
 from PIL import Image
+import pyqtgraph as pg
+
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
+
 
 from scripts.pycrointerface import PycroInterface, PycroConnectionError
 from scripts.raspiinterface import RaspiInterface, RaspiConnectionError
@@ -42,6 +47,10 @@ class Messages:
     enter_a_username = "Must enter a username to proceed"
     enter_a_password = "Must enter a password to proceed"
     button_label_calibrate_dmd = "Calibrate DMD Geometry"
+    exposure_ms_label = "Exposure (ms)"
+    begin = "Begin"
+    enter_raspi_ssh_login_creds = "Enter Raspi SSH login Credentials"
+    connection_failed_title = "Connection Failed"
 
 class RaspiCredsDialog(QDialog):
     def __init__(self):
@@ -53,7 +62,7 @@ class RaspiCredsDialog(QDialog):
         self.buttonBox.accepted.connect(self.accept)
         
         self.layout = QVBoxLayout()
-        message = QLabel("Enter Raspi SSH login Credentials")
+        message = QLabel(Messages.enter_raspi_ssh_login_creds)
         
         self.hostnameWidget = QLineEdit()
         self.hostnameWidget.setPlaceholderText("hostname")
@@ -71,10 +80,10 @@ class RaspiCredsDialog(QDialog):
         self.setLayout(self.layout)
 
 class ConnectionErrorDialog(QDialog):
-    def __init__(self, text):
+    def __init__(self, title, text):
         super().__init__()
 
-        self.setWindowTitle("Connection Failed")
+        self.setWindowTitle(title)
 
         QBtn = QDialogButtonBox.StandardButton.Ok
 
@@ -91,42 +100,65 @@ class ConnectionErrorDialog(QDialog):
 class DmdCalibrationWindow(QDialog):
     def __init__(self, pycroInterface, raspiInterface):
         super().__init__()
+        pg.setConfigOptions(antialias=True)
 
         self.setWindowTitle("Dmd Calibration")
 
         self.vlayout = QVBoxLayout()
 
-        self.imgLabel = QLabel()
-        canvas = QPixmap(400, 300)
-        canvas.fill(Qt.GlobalColor.white)
-        self.imgLabel.setPixmap(canvas)
-        self.vlayout.addWidget(self.imgLabel)
+        # self.imgLabel = QLabel()
+        # canvas = QPixmap(400, 300)
+        # canvas.fill(Qt.GlobalColor.white)
+        # self.imgLabel.setPixmap(canvas)
+        # self.vlayout.addWidget(self.imgLabel)
+        exposureMsLabel = QLabel(Messages.exposure_ms_label)
+        self.vlayout.addWidget(exposureMsLabel)
+        self.exposureMsWidget = QLineEdit()
+        self.exposureMsWidget.setText("100")
+        # self.hostnameWidget.setPlaceholderText("hostname")
+        self.vlayout.addWidget(self.exposureMsWidget)
+
+        self.beginButton = QPushButton(Messages.begin)
+        self.beginButton.clicked.connect(self.begin_button_clicked)
+
+        self.vlayout.addWidget(self.beginButton)
 
         self.setLayout(self.vlayout)
         
         self.pycroInterface = pycroInterface
         self.raspiInterface = raspiInterface
 
-        self.calibrate()
-    
+    def begin_button_clicked(self):
+        widgetTxt = self.exposureMsWidget.text()
+
+        # def isfloat(num):
+        try:
+            exposureFlt = float(widgetTxt)
+            # return True
+        except ValueError:
+            dlg = InvalidValueDialog("Can't parse '{}' as floating point number".format(widgetTxt))
+            dlg.exec()
+            return
+            
+        print(widgetTxt)
+
     def calibrate(self):
         self.pycroInterface.set_imaging_settings_for_acquisition(
             multishutter_preset="NoMembers",
             sapphire_on_override="on",
-            exposure_ms=100,
+            exposure_ms=1000,
             sapphire_setpoint="110",
             )
         pic = self.pycroInterface.snap_pic()
+
+        imv = pg.ImageView()
+        imv.setImage(pic)
+        imv.getHistogramWidget()
+        
+        self.vlayout.addWidget(imv)
+
         print("took pic!")
 
-        self.draw_something()
-
-    def draw_something(self):
-        canvas = self.imgLabel.pixmap()
-        painter = QPainter(canvas)
-        painter.drawLine(10, 10, 300, 200)
-        painter.end()
-        self.imgLabel.setPixmap(canvas)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -199,9 +231,12 @@ class MainWindow(QMainWindow):
         print("Calibrating dmd")
         dmdcalibrationdialog = DmdCalibrationWindow(self.pycroInterface, self.raspiInterface)
         dmdcalibrationdialog.exec()
+
+        self.pycroInterface.set_imaging_settings_for_acquisition(
+            multishutter_preset="NoMembers",
+            sapphire_on_override="off",
+            )
         
-        # self.core.snap_image()
-        # tagged_image = self.core.get_tagged_image()
 
     
     def pycroConnectButtonClicked(self):
@@ -220,7 +255,7 @@ class MainWindow(QMainWindow):
             self.pycroStatusLabelWidget.setStyleSheet('background-color: yellow')
             self.connectToPycroButton.setEnabled(True)
             
-            dlg = ConnectionErrorDialog(Messages.micro_connection_failed + ": " + str(e))
+            dlg = ConnectionErrorDialog(Messages.connection_failed_title, Messages.micro_connection_failed + ": " + str(e))
             dlg.exec()
         
         self.updateOptions()
@@ -261,13 +296,15 @@ class MainWindow(QMainWindow):
             self.raspiStatusLabelWidget.setStyleSheet('background-color: yellow')
             self.connectToRaspiButton.setEnabled(True)
             
-            dlg = ConnectionErrorDialog(Messages.raspi_connection_failed + ": " + str(e))
+            dlg = ConnectionErrorDialog(Messages.connection_failed_title, Messages.raspi_connection_failed + ": " + str(e))
             dlg.exec()
         
         self.updateOptions()
     
     def updateOptions(self):
-        if self.raspiInterface is not None and self.pycroInterface is not None:
+        if self.pycroInterface is not None:
+
+        # if self.raspiInterface is not None and self.pycroInterface is not None:
             self.calibrateDmdGeometryButton.setEnabled(True)
         else:
             self.calibrateDmdGeometryButton.setEnabled(False)
