@@ -7,7 +7,11 @@ def save_local_img_for_dmd(np_float_img, path):
     assert np_float_img.dtype == float, "Image should be float array"
     assert np.all(np_float_img >= 0), "Image should have no negative brightness values"
     assert np.all(np_float_img <= 1), "Image should have no brightness values greater than 1"
-    assert np_float_img.shape == (DMD_H, DMD_W), "Numpy float image should have shape {}, instead received  {}".format((DMD_H, DMD_W), np_float_img.shape)
+    
+    expected_arr_shape = (DmdConstants.DMD_H, DmdConstants.DMD_W)
+    if  np_float_img.shape != expected_arr_shape:
+        raise Exception("Numpy float image should have shape {}, "+
+            "instead received  {}".format(expected_arr_shape, np_float_img.shape))
 
     max_int16 =  np.iinfo(np.uint16).max
 
@@ -127,7 +131,8 @@ class RaspiImageSender:
     def send_image(self, np_float_img):
         if not self._feh_running:
             raise Exception("Can't send images to show without feh up and running, should call start_feh before send_image_to_feh")
-
+        
+        
 
         img_path = os.path.join(self.local_image_temp_dirpath, "imgfordmd.tiff")
         save_local_img_for_dmd(np_float_img, img_path)

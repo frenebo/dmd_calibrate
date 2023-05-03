@@ -1,11 +1,5 @@
-from PyQt6.QtWidgets import QApplication
-
-import pycromanager
-from PIL import Image
-import pyqtgraph as pg
-
-from matplotlib.figure import Figure
 import sys
+from PyQt6.QtWidgets import QApplication
 
 from scripts.mainwindow import MainWindow
 

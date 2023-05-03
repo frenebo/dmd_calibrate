@@ -21,5 +21,6 @@ class Messages:
     enter_raspi_ssh_login_creds = "Enter Raspi SSH login Credentials"
     connection_failed_title = "Connection Failed"
     invalid_field_title = "Invalid Field"
-    solid_field_image_at_full_brightness = "Solid field at full brightness"
-    displaying_colon = "Displaying: "
+    solid_bright_field = "Solid bright field"
+    calibrating_colon = "Calibrating "
+    starting_calibration = "Starting Calibration"

@@ -94,10 +94,6 @@ class MainWindow(QMainWindow):
         dmdcalibrationdialog = DmdCalibrationDialog(self.pycroInterface, self.raspiInterface)
         dmdcalibrationdialog.exec()
 
-        self.pycroInterface.set_imaging_settings_for_acquisition(
-            multishutter_preset="NoMembers",
-            sapphire_on_override="off",
-            )
         
     def pycroConnectButtonClicked(self):
         try:

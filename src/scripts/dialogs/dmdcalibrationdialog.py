@@ -10,7 +10,8 @@ from PyQt6.QtWidgets import (
 )
 
 from .errordialog import ErrorDialog
-from ..constants import Messages
+from ..constants import Messages, DmdConstants
+from ..calibration import Calibrator
 
 class DmdCalibrationDialog(QDialog):
     def __init__(self, pycroInterface, raspiInterface):
@@ -64,21 +65,27 @@ class DmdCalibrationDialog(QDialog):
         self.statusLabel.setText(status_text)
 
     def calibrate(self, exposure_ms):
-        self.show_status(Messages.displaying_colon + Messages.solid_field_image_at_full_brightness)
+        self.show_status(Messages.starting_calibration)
         
-        self.pycroInterface.set_imaging_settings_for_acquisition(
-            multishutter_preset="NoMembers",
-            sapphire_on_override="on",
-            exposure_ms=exposure_ms,
-            sapphire_setpoint="110",
-            )
-        pic = self.pycroInterface.snap_pic()
+        with self.raspiInterface.image_sender() as raspi_image_sender:
+            calibrator = Calibrator(self.pycroInterface, raspi_image_sender, exposure_ms)
+            calibrator.turn_on_laser_and_setup_pycromanager()
+            
+            self.show_status(Messages.calibrating_colon + Messages.solid_bright_field)
+            calibrator.calibrate_solid_bright_field()
+            
+            self.show_status(Messages.calibrating_colon + Messages.solid_dark_field)
+            calibrator.calibrate_solid_dark_field()
+            
+            calibrator.turn_off_laser_and_turn_off_shutter()
+        
+        # # pic = self.pycroInterface.snap_pic()
 
-        imv = pg.ImageView()
-        imv.setImage(pic)
-        imv.getHistogramWidget()
+        # imv = pg.ImageView()
+        # imv.setImage(pic)
+        # imv.getHistogramWidget()
         
-        self.vlayout.addWidget(imv)
+        # self.vlayout.addWidget(imv)
 
         print("took pic!")
 

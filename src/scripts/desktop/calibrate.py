@@ -13,8 +13,6 @@ from .raspiinterface import RaspiInterface
 from .camera import take_micromanager_pic_as_float_arr
 from .coordtransformations import best_fit_affine_transform
 
-DMD_H = 800
-DMD_W = 1280
 
 # When calibration doesn't work right
 class CalibrationException(Exception):
@@ -131,7 +129,6 @@ def get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir):
         black_img_microphoto = take_micromanager_pic_as_float_arr(core)
         black_photos.append(black_img_microphoto)
 
-
     white_img_dmd = np.ones(dmd_dims, dtype=float)
     white_img_dmd_path = os.path.join(dmd_img_dir, "allwhite.tiff")
     save_img_for_dmd(white_img_dmd, white_img_dmd_path)
@@ -141,7 +138,6 @@ def get_background_black_and_white_levels(core, raspi_controller, dmd_img_dir):
     for i in range(NUM_WHITE_SAMPLES):
         white_img_microphoto = take_micromanager_pic_as_float_arr(core)
         white_photos.append(white_img_microphoto)
-
 
     all_black_samples = np.array(black_photos)
     all_white_samples = np.array(white_photos)
