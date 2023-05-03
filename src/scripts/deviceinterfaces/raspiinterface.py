@@ -3,47 +3,60 @@ import json
 import time
 import os
 
+def save_local_img_for_dmd(np_float_img, path):
+    assert np_float_img.dtype == float, "Image should be float array"
+    assert np.all(np_float_img >= 0), "Image should have no negative brightness values"
+    assert np.all(np_float_img <= 1), "Image should have no brightness values greater than 1"
+    assert np_float_img.shape == (DMD_H, DMD_W), "Numpy float image should have shape {}, instead received  {}".format((DMD_H, DMD_W), np_float_img.shape)
+
+    max_int16 =  np.iinfo(np.uint16).max
+
+    np_int8_img = (np_float_img *  max_int16 ).astype(np.uint16)
+
+
+    tifffile.imwrite(path, np_int8_img)
+
 class RaspiConnectionError(Exception):
     pass
+
+
+# class StandInRaspiImageSender:
+#     def __init__(self):
+#         pass
     
+#     def 
+
+class StandInRaspiImageSenderContextManager:
+    def __init__(self):
+        pass
+    
+    def __enter__(self):
+        return StandInRaspiImageSender()
+    
+    def __exit__(self):
+        pass
 
 class StandInRaspiInterface:
     def __init__(self, hostname, username, password):
         pass
-    # def 
+    
+    def image_sender(self):
+        return StandInRaspiImageSenderContextManager()
 
-class RaspiInterface:
-    def __init__(self, hostname, username, password):
-        self.ssh_client = paramiko.SSHClient()
-        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        
-        try:
-            self.ssh_client.connect(hostname=hostname, username=username, password=password)
-        except Exception as e:
-            raise RaspiConnectionError("SSH connection: {}".format(str(e)))
-            
-        
+class RaspiImageSender:
+    def __init__(self, ssh_client, local_image_temp_dirpath, raspi_remote_img_dirpath):
+        self.ssh_client = ssh_client
+        self.local_image_temp_dirpath = local_image_temp_dirpath
+        self.sent_image_name_counter = 0
         self.tiffname_currently_on_pi = None
-        self.remote_image_folder = "/home/pi/Pictures/pics_to_show_files"
-        self.remote_slideshow_symlinks_folder = "/home/pi/Pictures/slideshow_symlinks"
-        self.sent_image_name_counter = 1
-
+        self.raspi_remote_img_dirpath = raspi_remote_img_dirpath
+        
+        self.remote_image_folder = self.raspi_remote_img_dirpath + "/slideshow_image_files"
+        self.remote_slideshow_symlinks_folder = self.raspi_remote_img_dirpath + "/slideshow_symlinks"
+        
         self._feh_running = False
     
-    def _raise_exception_if_stderr_not_empty(self, stdout, stderr):
-        script_output = stdout.readlines()
-        script_err = stderr.readlines()
-        
-        if len(script_err)!= 0:
-            text_stderr = "".join(script_err)
-            text_stdout = "".join(script_output)
-            raise Exception("Error with pi program:\nstderr:\n"+text_stderr+"\nstdout:\n" + text_stdout)
-
     def start_feh(self):
-        if self._feh_running:
-            print("Already started feh, ignoring start_feh function call")
-            return
-        
         # Make directory for slideshow symlinks to images, if it doesn't exist already
         stdin, stdout, stderr = self.ssh_client.exec_command("mkdir -p '{}'".format(self.remote_slideshow_symlinks_folder))
         self._raise_exception_if_stderr_not_empty(stdout, stderr)
@@ -91,11 +104,34 @@ class RaspiInterface:
         self._feh_running = True
         print("Started feh: '{}'".format(feh_command))
 
-    def send_image_to_feh(self, local_image_path):
-        # We call this after sending image, so that feh has something to display
+    
+    def _raise_exception_if_stderr_not_empty(self, stdout, stderr):
+        script_output = stdout.readlines()
+        script_err = stderr.readlines()
+        
+        if len(script_err)!= 0:
+            text_stderr = "".join(script_err)
+            text_stdout = "".join(script_output)
+            raise Exception("Error with pi program:\nstderr:\n"+text_stderr+"\nstdout:\n" + text_stdout)
+    
+    
+    def kill_feh(self):
+        stdin, stdout, stderr = self.ssh_client.exec_command("pkill feh")
+        
+        self._raise_exception_if_stderr_not_empty(stdout, stderr)
+        
+        self._feh_running = False
+        print("Killed feh")
+    
+    
+    def send_image(self, np_float_img):
         if not self._feh_running:
             raise Exception("Can't send images to show without feh up and running, should call start_feh before send_image_to_feh")
 
+
+        img_path = os.path.join(self.local_image_temp_dirpath, "imgfordmd.tiff")
+        save_local_img_for_dmd(np_float_img, img_path)
+        
         # Need a new name for the image
         while "pattern_{}.tiff".format(self.sent_image_name_counter) == self.tiffname_currently_on_pi:
             self.sent_image_name_counter += 1
@@ -144,13 +180,69 @@ class RaspiInterface:
 
         # Come up with path for new image. Shouldn't be the same as the previous one
 
-    def kill_feh(self):
-        # if not self._feh
-        stdin, stdout, stderr = self.ssh_client.exec_command("pkill feh")
+    
+    
+
+class RaspiImageSenderContextManager:
+    def __init__(self, ssh_client, img_tempdirpath, raspi_remote_img_dirpath):
+        self.ssh_client = ssh_client
+        self.img_tempdirpath = img_tempdirpath
+        self.raspi_remote_img_dirpath = raspi_remote_img_dirpath
         
-        self._raise_exception_if_stderr_not_empty(stdout, stderr)
+        self.entered = False
+        self.exited = False
+    
+    def __enter__(self):
+        if self.entered:
+            raise RuntimeError("__enter__ has been called twice on RaspiImageSenderContextManager - only meant to be used once!")
+        self.entered = True
         
-        self._feh_running = False
-        print("Killed feh")
+        self.sender = RaspiImageSender(self.ssh_client, self.img_tempdirpath, self.raspi_remote_img_dirpath)
+        self.sender.start_feh()
+    
+    def __exit__(self):
+        if not self.entered:
+            raise RuntimeError("__exit__ called on RaspiImageSenderContextManager without __enter__ called.")
+        self.sender.kill_feh()
+        self.exited = True
+
+
+class RaspiInterface:
+    def __init__(self, hostname, username, password, tempdirpath):
+        self.ssh_client = paramiko.SSHClient()
+        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        try:
+            self.ssh_client.connect(hostname=hostname, username=username, password=password)
+        except Exception as e:
+            raise RaspiConnectionError("SSH connection: {}".format(str(e)))
             
+        
+        self.tiffname_currently_on_pi = None
+        self.raspi_remote_img_dirpath = "/home/pi/Pictures/display_images_workdirectory"
+        # self.remote_image_folder = "/home/pi/Pictures/pics_to_show_files"
+        # self.remote_slideshow_symlinks_folder = "/home/pi/Pictures/slideshow_symlinks"
+        self.sent_image_name_counter = 1
+        
+        self.last_created_raspi_image_context_manager = None
+        
+        self.tempdirpath = tempdirpath
+        os.makedirs(self.tempdirpath, exist_ok=True)
+        
+        self.image_sender_tempdirpath = os.path.join(self.tempdirpath, "raspiImageSenderTmpImages")
+        os.makedirs(self.image_sender_tempdirpath, exist_ok=True)
+        
+    
+    def image_sender(self):
+        if self.last_created_raspi_image_context_manager is not None:
+            if (last_created_raspi_image_context_manager.entered and
+                not last_created_raspi_image_context_manager.exited):
+                raise RuntimeError(
+                    "Cannot create new image sender until previous one has " +
+                    "finished running - Raspi can only have one running at a given time.")
+        
+        # @TODO find out how __enter__ __exit__ logic is really supposed to work and implement better
+        context_manager = RaspiImageSenderContextManager(self.ssh_client, self.image_sender_tempdirpath, self.raspi_remote_img_dirpath)
+        self.last_created_raspi_image_context_manager = context_manager
+        return context_manager
         
