@@ -1,3 +1,4 @@
+import os
 
 from PyQt6.QtWidgets import (
     QMainWindow,
@@ -26,8 +27,9 @@ from .constants import Messages
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, useStandIns=False):
+    def __init__(self, workdir, useStandIns=False):
         super().__init__()
+        self.workdir = workdir
         self.useStandIns = useStandIns
 
         self.setWindowTitle("Dmd Acquisition Tool")
@@ -91,7 +93,7 @@ class MainWindow(QMainWindow):
     
     def calibrateDmdButtonClicked(self):
         print("Calibrating dmd")
-        dmdcalibrationdialog = DmdCalibrationDialog(self.pycroInterface, self.raspiInterface)
+        dmdcalibrationdialog = DmdCalibrationDialog(self.pycroInterface, self.raspiInterface, using_standins=self.useStandIns)
         dmdcalibrationdialog.exec()
 
         
@@ -142,10 +144,11 @@ class MainWindow(QMainWindow):
             return
         
         try:
+            raspiworkdirpath = os.path.join(self.workdir, "raspifiles")
             if self.useStandIns:
-                self.raspiInterface = StandInRaspiInterface(hostname, username, password)
+                self.raspiInterface = StandInRaspiInterface(hostname, username, password, raspiworkdirpath)
             else:
-                self.raspiInterface = RaspiInterface(hostname, username, password)
+                self.raspiInterface = RaspiInterface(hostname, username, password, raspiworkdirpath)
             
             # if success
             self.raspiStatusLabelWidget.setText(Messages.connected_to_raspi)

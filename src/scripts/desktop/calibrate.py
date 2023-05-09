@@ -493,7 +493,6 @@ def calibrate_geometry(core, raspi_controller, workdir):
                     "dmd_circle_y": circle_dmd_y,
                     "camera_detected_blob": blobs_info_arr[y_idx][x_idx][blob_idx],
                 })
-    # print(selected_calibration_measurements)
 
     transformT = analyze_calibration_measurements(selected_calibration_measurements)
     cam_dims = photo_arr[0][0].shape
@@ -512,24 +511,24 @@ def calibrate_geometry(core, raspi_controller, workdir):
     raspi_controller.send_image_to_feh(test_img_path)
     input("enter any input to close program. You can check out the pattern in micromanager now")
 
-def calibrate(
-    hostname,
-    username,
-    password,
-    workdir):
-    os.makedirs(workdir, exist_ok=True)
+# def calibrate(
+#     hostname,
+#     username,
+#     password,
+#     workdir):
+#     os.makedirs(workdir, exist_ok=True)
 
 
-    with pycromanager.Bridge() as bridge:
-        core = bridge.get_core()
-        raspi_controller = RaspiInterface(hostname, username, password)
+#     with pycromanager.Bridge() as bridge:
+#         core = bridge.get_core()
+#         raspi_controller = RaspiInterface(hostname, username, password)
 
-        raspi_controller.start_feh()
+#         raspi_controller.start_feh()
 
-        try:
-            calibrate_geometry(core, raspi_controller, workdir)
-        except:
-            raspi_controller.kill_feh()
-            raise
-        raspi_controller.kill_feh()
+#         try:
+#             calibrate_geometry(core, raspi_controller, workdir)
+#         except:
+#             raspi_controller.kill_feh()
+#             raise
+#         raspi_controller.kill_feh()
 

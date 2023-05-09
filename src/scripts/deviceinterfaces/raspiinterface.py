@@ -42,8 +42,12 @@ class StandInRaspiImageSenderContextManager:
         pass
 
 class StandInRaspiInterface:
-    def __init__(self, hostname, username, password):
-        pass
+    def __init__(self, hostname, username, password, tempdirpath):
+        print("Stand-in raspi interface arguments: ")
+        print("hostname '{}'".format(hostname))
+        print("username '{}'".format(username))
+        print("password '{}'".format(password))
+        print("tempdirpath '{}'".format(tempdirpath))
     
     def image_sender(self):
         return StandInRaspiImageSenderContextManager()

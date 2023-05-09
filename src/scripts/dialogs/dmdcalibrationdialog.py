@@ -18,12 +18,44 @@ from .errordialog import ErrorDialog
 from ..constants import Messages, DmdConstants
 from ..calibration import Calibrator, CalibrationException
 
+def make_image_flipper(self, np_images, label_str=None, under_label=None):
+    np_images = np.array(np_images)
+    flipperWidget = QWidget()
+    flipVLay = QVBoxLayout()
+    flipperWidget.setLayout(flipVLay)
+    
+    if label_str is not None:
+        lab = QLabel(label_str)
+        lab.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        flipVLay.addWidget(lab)
+    
+    imgView = pg.ImageView(discreteTimeLine=True)
+    imgView.setImage(np_images, axes={ "t": 0, "x": 1, "y": 2 })
+    flipVLay.addWidget(imgView)
+
+    if under_label is not None:
+        undlab = QLabel(under_label)
+        undlab.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        flipVLay.addWidget(undlab)
+    
+    return flipperWidget
+
+class CoordCalibrationDialog(QDialog):
+    def __init__(self, pycroInterface, raspiInterface, using_standins=False):
+        super().__init__()
+        self.setWindowTitle("Dmd Coordinate Calibration")
+
+class BrightnessCalibrationDialog(QDialog):
+    def __init__(self, pycroInterface, raspiInterface, using_standins=False):
+        super().__init__()
+        self.setWindowTitle("Dmd Brightness Calibration")
+
 class DmdCalibrationDialog(QDialog):
-    def __init__(self, pycroInterface, raspiInterface):
+    def __init__(self, pycroInterface, raspiInterface, using_standins=False):
         super().__init__()
         pg.setConfigOptions(antialias=True)
 
-        self.setWindowTitle("Dmd Calibration")
+        self.setWindowTitle("Dmd Calibration Setup")
 
         self.vlayout = QVBoxLayout()
 
@@ -50,6 +82,7 @@ class DmdCalibrationDialog(QDialog):
         
         self.pycroInterface = pycroInterface
         self.raspiInterface = raspiInterface
+        self.using_standins = using_standins
 
     def begin_button_clicked(self):
         widgetTxt = self.exposureMsWidget.text()
@@ -73,24 +106,6 @@ class DmdCalibrationDialog(QDialog):
     
     def show_status(self, status_text):
         self.statusLabel.setText(status_text)
-    
-    def make_image_flipper(self, np_images, label_str=None):
-        np_images = np.array(np_images)
-        VWidg = QWidget()
-        VLay = QVBoxLayout()
-        VWidg.setLayout(VLay)
-        
-        if label_str is not None:
-            lab = QLabel(label_str)
-            lab.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            VLay.addWidget(lab)
-        
-        imgView = pg.ImageView()
-        imgView.setImage(np_images, axes={ "t": 0, "x": 1, "y": 2 })
-        VLay.addWidget(imgView)
-        
-        return VWidg
-        
 
     def calibrate(self, exposure_ms):
         self.show_status(Messages.starting_calibration)
@@ -100,9 +115,10 @@ class DmdCalibrationDialog(QDialog):
         bright_level = None
         dark_level = None
         bright_dark_calibration_error = None
+        illuminated_section_mask = None
         
         with self.raspiInterface.image_sender() as raspi_image_sender:
-            calibrator = Calibrator(self.pycroInterface, raspi_image_sender, exposure_ms)
+            calibrator = Calibrator(self.pycroInterface, raspi_image_sender, exposure_ms, using_standins=self.using_standins)
             calibrator.turn_on_laser_and_setup_pycromanager()
             
             try:
@@ -113,8 +129,11 @@ class DmdCalibrationDialog(QDialog):
                 self.show_status(Messages.calibrating_colon + Messages.solid_dark_field)
                 calibrator.calibrate_solid_dark_field()
                 solid_dark_pics = calibrator.get_solid_dark_cam_pics()
+
+                calibrator.calculate_bright_and_dark_levels()
                 
                 bright_level, dark_level = calibrator.get_bright_and_dark_levels()
+                illuminated_section_mask = calibrator.get_illuminated_section_mask()
             except CalibrationException as e:
                 self.show_status(Messages.calibration_error)
                 bright_dark_calibration_error = str(e)
@@ -122,43 +141,45 @@ class DmdCalibrationDialog(QDialog):
                 calibrator.turn_off_laser_and_turn_off_shutter()
         
         if solid_bright_pics is not None:
-            avgBrightFieldVWidg = self.make_image_flipper(
+            if bright_level is not None:
+                under_label = Messages.bright_level + ": " + str(bright_level)
+            else:
+                under_label = None
+            
+            avgBrightFieldVWidg = make_image_flipper(
                 solid_bright_pics,
-                label_str=Messages.solid_bright_field
+                label_str=Messages.solid_bright_field_calibration_images,
+                under_label=under_label
                 )
             self.calibrationImagesHLayout.addWidget(avgBrightFieldVWidg)
         
         if solid_dark_pics is not None:
-            avgDarkFieldVWidg = self.make_image_flipper(
+            if dark_level is not None:
+                under_label = Messages.dark_level + ": " + str(dark_level)
+            else:
+                under_label = None
+            
+            avgDarkFieldVWidg = make_image_flipper(
                 solid_dark_pics,
-                label_str=Messages.solid_dark_field
+                label_str=Messages.solid_dark_field_calibration_images,
+                under_label=under_label
                 )
+            
             self.calibrationImagesHLayout.addWidget(avgDarkFieldVWidg)
         
         if bright_dark_calibration_error is not None:
             print("Showing calibration error: " + bright_dark_calibration_error)
             dlg = ErrorDialog(Messages.calibration_error, bright_dark_calibration_error)
             dlg.exec()
-        
-        
-        
-        # avgDarkFieldVWidg = QWidget()
-        # avgDarkFieldVLay = QVBoxLayout()
-        # avgDarkFieldVWidg.setLayout(avgDarkFieldVLay)
-        # avgDarkFieldImgView 
-        
-        # self.calibrationImagesHLayout.addWidget(avgDarkFieldVWidg)
-        
-        
-        # if 
-        
-        # # pic = self.pycroInterface.snap_pic()
+        else:  
+            self.bright_level = bright_level
+            self.dark_level = dark_level
 
-        # imv = pg.ImageView()
-        # imv.setImage(pic)
-        # imv.getHistogramWidget()
-        
-        # self.vlayout.addWidget(imv)
+            beginCoordCalibrationButton = QPushButton(Messages.button_label_begin_coord_calibration)
+            beginCoordCalibrationButton.clicked.connect(self.beginCoordCalibrationButtonClicked)
 
-        print("took pic!")
-
+            self.calibrationImagesHLayout.addWidget(beginCoordCalibrationButton)
+    
+    def beginCoordCalibrationButtonClicked(self):
+        dlg = CoordCalibrationDialog(self.pycroInterface, self.raspiInterface, using_standins=self.using_standins)
+        dlg.exec()

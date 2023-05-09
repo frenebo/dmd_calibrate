@@ -1,23 +1,96 @@
 import pycromanager
 import numpy as np
 import random
+import math
+from skimage.draw import polygon
 
 class PycroConnectionError(Exception):
     pass
 
 class StandInPycroInterface:
     def __init__(self):
+        self.cam_h = 2000
+        self.cam_w = 1500
+        # self.dims = (2000, 2000)
+        self.field_skew_radians = np.random.uniform(low=-0.05,high=0.05)
+        self.field_h = self.cam_h * 0.7
+        self.field_w = self.cam_w * 0.7
+        self.field_center_y = self.cam_h / 2
+        self.field_center_x = self.cam_w / 2
+
+        self.bright_level = 2000
+        self.dark_level = 100
+
+        self.pretend_image = None
         pass
     
+    def make_field_mask(self):
+        center_to_corner_d = (1/2) * np.sqrt(self.field_w ** 2 + self.field_h ** 2)
+        center_to_corner_angle = np.arctan(self.field_h / self.field_w)
+        skew = self.field_skew_radians * np.random.uniform(0.95, 1.05)
+
+        cent_x = self.field_center_x * np.random.uniform(0.99, 1.01)
+        cent_y = self.field_center_y * np.random.uniform(0.99, 1.01)
+        
+        corn_angles = [
+            center_to_corner_angle + skew,
+            math.pi - center_to_corner_angle + skew,
+            math.pi + center_to_corner_angle + skew,
+            2 * math.pi - center_to_corner_angle + skew,
+        ]
+
+        vertices = []
+        for corn_ang in corn_angles:
+            x = cent_x + center_to_corner_d * math.cos(corn_ang)
+            y = cent_y + center_to_corner_d * math.sin(corn_ang)
+            vertices.append([x,y])
+        vertices = np.array(vertices)
+    
+
+
+        mask = np.zeros((self.cam_w, self.cam_h), 'uint8')
+        rr, cc = polygon(vertices[:,0], vertices[:,1], mask.shape)
+        mask[rr,cc] = 1
+
+        return mask
+    
+    def generate_background_noise(self):
+        gauss = np.random.uniform(0,100, (self.cam_w, self.cam_h))
+        return gauss
+        # gauss = gauss.reshape(img.shape[0],img.shape[1],img.shape[2]).astype('uint8')
+    
     def snap_pic(self):
-        dat = np.zeros((2000,2000), dtype=np.uint16)
-        for i in range(5):
-            xlim1, xlim2 = random.randint(0,2000), random.randint(0,2000)
-            ylim1, ylim2 = random.randint(0,2000), random.randint(0,2000)
-            xmin, xmax = min(xlim1, xlim2), max(xlim1, xlim2)
-            ymin, ymax = min(ylim1, ylim2), max(ylim1, ylim2)
-            dat[xmin:xmax,ymin:ymax] = random.randint(1000,2000)
-        return dat
+        # dat = np.zeros(self.dims, dtype=np.uint16)
+
+        bg_noise_image = self.generate_background_noise()
+
+        if self.pretend_image is None:
+            im =  self.generate_background_noise()
+        elif self.pretend_image == "solid white":
+            print("Making placeholder solid bright field image")
+            im = self.make_field_mask().astype(float) * self.bright_level
+            im += self.generate_background_noise()
+            # return im
+        elif self.pretend_image == "solid black":
+            print("Making placeholder solid dark field image")
+            im = self.make_field_mask().astype(float) * self.dark_level
+            im += self.generate_background_noise()
+        else:
+            raise Exception("Unknown pretend image type '{}'".format(self.pretend_image))
+        
+        im = im.astype(np.uint16)
+        return im
+
+        # mask = self.make_field_mask()
+
+        # return dat
+    
+    def standin_pretend_solid_white(self):
+        self.pretend_image = "solid white"
+        # self.pretend
+    
+    def standin_pretend_solid_black(self):
+        self.pretend_image = "solid black"
         
     
     
