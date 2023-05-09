@@ -18,7 +18,7 @@ from .errordialog import ErrorDialog
 from ..constants import Messages, DmdConstants
 from ..calibration import Calibrator, CalibrationException
 
-def make_image_flipper(self, np_images, label_str=None, under_label=None):
+def make_image_flipper(np_images, label_str=None, under_label=None):
     np_images = np.array(np_images)
     flipperWidget = QWidget()
     flipVLay = QVBoxLayout()
@@ -40,105 +40,109 @@ def make_image_flipper(self, np_images, label_str=None, under_label=None):
     
     return flipperWidget
 
+
+def draw_white_circle(np_float_img, diameter, center_x, center_y):
+    assert np_float_img.dtype == float, "Image should be float array"
+    assert int(diameter) == diameter, "Diameter value should be integer"
+    assert int(center_x) == center_x, "Center x value should be integer"
+    assert int(center_y) == center_y, "Center y value should be integer"
+    assert diameter > 0, "Diameter should be positive"
+    assert diameter % 2 == 1, "Diameter should be odd, so the circle will be centered on a single pixel"
+
+    diameter = int(diameter)
+    center_x = int(center_x)
+    center_y = int(center_y)
+
+    circ_xx, circ_yy = np.meshgrid(np.arange(diameter), np.arange(diameter))
+
+    # This should already be a whole number, but casting to an integer so we can array index with it
+    rad = int((diameter - 1) / 2)
+
+    circ_mask = (np.square(circ_xx - rad) + np.square(circ_yy - rad)) <= np.square(rad + 0.5)
+
+    # Convert to float
+    circ_mask  = circ_mask.astype(float)
+
+    np_float_img[center_y - rad:center_y + rad + 1, center_x - rad:center_x + rad + 1] += circ_mask
+
+    # If the spot wasn't already white, then it'll have brightness more than 1.0 now - fix this here
+    np_float_img[np_float_img > 1.0] = 1.0
+
+
 class CoordCalibrationDialog(QDialog):
-    def __init__(self, pycroInterface, raspiInterface, using_standins=False):
+    def __init__(self, pycroInterface, raspiInterface, exposureMs, usingStandins=False):
         super().__init__()
         self.setWindowTitle("Dmd Coordinate Calibration")
 
-class BrightnessCalibrationDialog(QDialog):
-    def __init__(self, pycroInterface, raspiInterface, using_standins=False):
-        super().__init__()
-        self.setWindowTitle("Dmd Brightness Calibration")
-
-class DmdCalibrationDialog(QDialog):
-    def __init__(self, pycroInterface, raspiInterface, using_standins=False):
-        super().__init__()
-        pg.setConfigOptions(antialias=True)
-
-        self.setWindowTitle("Dmd Calibration Setup")
+        self.pycroInterface = pycroInterface
+        self.raspiInterface = raspiInterface
+        self.exposureMs = exposureMs
+        self.usingStandins = usingStandins
 
         self.vlayout = QVBoxLayout()
-
-        exposureMsLabel = QLabel(Messages.exposure_ms_label)
-        self.vlayout.addWidget(exposureMsLabel)
-        self.exposureMsWidget = QLineEdit()
-        self.exposureMsWidget.setText("100")
-        self.vlayout.addWidget(self.exposureMsWidget)
-
-        self.beginButton = QPushButton(Messages.begin)
-        self.beginButton.clicked.connect(self.begin_button_clicked)
-
-        self.vlayout.addWidget(self.beginButton)
         
         self.statusLabel = QLabel("")
         self.vlayout.addWidget(self.statusLabel)
-        
+
+        self.setLayout(self.vlayout)
+
+        self.calibrate()
+    
+    def calibrate(self):
+        pass
+
+    def show_status(self, status_text):
+        self.statusLabel.setText(status_text)
+
+class BrightnessCalibrationDialog(QDialog):
+    def __init__(self, pycroInterface, raspiInterface, exposureMs, usingStandins=False):
+        super().__init__()
+
+        self.pycroInterface = pycroInterface
+        self.raspiInterface = raspiInterface
+        self.exposureMs = exposureMs
+        self.usingStandins = usingStandins
+
+        self.setWindowTitle("Dmd Brightness Calibration")
+
+        self.vlayout = QVBoxLayout()
+
         calibrationImagesWidget = QWidget()
         self.calibrationImagesHLayout = QHBoxLayout()
         calibrationImagesWidget.setLayout(self.calibrationImagesHLayout)
         self.vlayout.addWidget(calibrationImagesWidget)
 
-        self.setLayout(self.vlayout)
-        
-        self.pycroInterface = pycroInterface
-        self.raspiInterface = raspiInterface
-        self.using_standins = using_standins
+        self.statusLabel = QLabel("")
+        self.vlayout.addWidget(self.statusLabel)
 
-    def begin_button_clicked(self):
-        widgetTxt = self.exposureMsWidget.text()
+        self.setLayout(self.vlayout)
+
+
+        self.calibrate()
+
         
-        try:
-            exposureFlt = float(widgetTxt)
-        except ValueError:
-            dlg = ErrorDialog(Messages.invalid_field_title, "Can't parse '{}' as floating point number".format(widgetTxt))
-            dlg.exec()
-            return
-        
-        if exposureFlt <= 0:
-            dlg = ErrorDialog(Messages.invalid_field_title, "Exposure must be greater than zero - invalid value '{}'".format(widgetTxt))
-            dlg.exec()
-            return
-        
-        self.exposureMsWidget.setEnabled(False)
-        self.beginButton.setEnabled(False)
-        
-        self.calibrate(exposureFlt)
-    
     def show_status(self, status_text):
         self.statusLabel.setText(status_text)
 
-    def calibrate(self, exposure_ms):
+    def calibrate(self):
         self.show_status(Messages.starting_calibration)
         
         solid_bright_pics = None
         solid_dark_pics = None
-        bright_level = None
-        dark_level = None
         bright_dark_calibration_error = None
         illuminated_section_mask = None
-        
-        with self.raspiInterface.image_sender() as raspi_image_sender:
-            calibrator = Calibrator(self.pycroInterface, raspi_image_sender, exposure_ms, using_standins=self.using_standins)
-            calibrator.turn_on_laser_and_setup_pycromanager()
-            
-            try:
-                self.show_status(Messages.calibrating_colon + Messages.solid_bright_field)
-                calibrator.calibrate_solid_bright_field()
-                solid_bright_pics = calibrator.get_solid_bright_cam_pics()
-            
-                self.show_status(Messages.calibrating_colon + Messages.solid_dark_field)
-                calibrator.calibrate_solid_dark_field()
-                solid_dark_pics = calibrator.get_solid_dark_cam_pics()
 
-                calibrator.calculate_bright_and_dark_levels()
-                
-                bright_level, dark_level = calibrator.get_bright_and_dark_levels()
-                illuminated_section_mask = calibrator.get_illuminated_section_mask()
-            except CalibrationException as e:
-                self.show_status(Messages.calibration_error)
-                bright_dark_calibration_error = str(e)
-            finally:
-                calibrator.turn_off_laser_and_turn_off_shutter()
+        calibrator = Calibrator(self.pycroInterface, self.raspiInterface, self.exposureMs, usingStandins=self.usingStandins)
+
+        self.show_status(Messages.calibrating_colon + Messages.solid_bright_and_dark_field)
+        
+        calibrator.calibrate_solid_bright_and_dark_field()
+        solid_bright_pics, solid_dark_pics = calibrator.get_solid_bright_and_dark_cam_pics()
+        
+        calibrator.calculate_bright_and_dark_levels()
+        bright_level, dark_level = calibrator.get_bright_and_dark_levels()
+        
+        self.show_status(Messages.done_calibrating_brightness)
         
         if solid_bright_pics is not None:
             if bright_level is not None:
@@ -171,15 +175,64 @@ class DmdCalibrationDialog(QDialog):
             print("Showing calibration error: " + bright_dark_calibration_error)
             dlg = ErrorDialog(Messages.calibration_error, bright_dark_calibration_error)
             dlg.exec()
-        else:  
-            self.bright_level = bright_level
-            self.dark_level = dark_level
+        else:
 
             beginCoordCalibrationButton = QPushButton(Messages.button_label_begin_coord_calibration)
             beginCoordCalibrationButton.clicked.connect(self.beginCoordCalibrationButtonClicked)
 
-            self.calibrationImagesHLayout.addWidget(beginCoordCalibrationButton)
+            self.vlayout.addWidget(beginCoordCalibrationButton)
     
     def beginCoordCalibrationButtonClicked(self):
-        dlg = CoordCalibrationDialog(self.pycroInterface, self.raspiInterface, using_standins=self.using_standins)
+        dlg = CoordCalibrationDialog(self.pycroInterface, self.raspiInterface, self.exposureMs, usingStandins=self.usingStandins)
         dlg.exec()
+
+
+class DmdCalibrationDialog(QDialog):
+    def __init__(self, pycroInterface, raspiInterface, usingStandins=False):
+        super().__init__()
+        pg.setConfigOptions(antialias=True)
+
+        self.setWindowTitle("Dmd Calibration Setup")
+
+        self.vlayout = QVBoxLayout()
+
+        exposureMsLabel = QLabel(Messages.exposure_ms_label)
+        self.vlayout.addWidget(exposureMsLabel)
+        self.exposureMsWidget = QLineEdit()
+        self.exposureMsWidget.setText("100")
+        self.vlayout.addWidget(self.exposureMsWidget)
+
+        self.beginButton = QPushButton(Messages.begin)
+        self.beginButton.clicked.connect(self.brightness_calibration_button_clicked)
+
+        self.vlayout.addWidget(self.beginButton)
+        
+
+        self.setLayout(self.vlayout)
+        
+        self.pycroInterface = pycroInterface
+        self.raspiInterface = raspiInterface
+        self.usingStandins = usingStandins
+
+    def brightness_calibration_button_clicked(self):
+        widgetTxt = self.exposureMsWidget.text()
+        
+        try:
+            exposureFlt = float(widgetTxt)
+        except ValueError:
+            dlg = ErrorDialog(Messages.invalid_field_title, "Can't parse '{}' as floating point number".format(widgetTxt))
+            dlg.exec()
+            return
+        
+        if exposureFlt <= 0:
+            dlg = ErrorDialog(Messages.invalid_field_title, "Exposure must be greater than zero - invalid value '{}'".format(widgetTxt))
+            dlg.exec()
+            return
+        
+        self.exposureMsWidget.setEnabled(False)
+        self.beginButton.setEnabled(False)
+        
+        dlg = BrightnessCalibrationDialog(self.pycroInterface, self.raspiInterface, exposureFlt, self.usingStandins)
+        dlg.exec()
+    
+    # def beginCoordCalibrationButtonClicked(self):

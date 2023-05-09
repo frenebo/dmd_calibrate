@@ -96,12 +96,12 @@ class StandInPycroInterface:
     
     def set_imaging_settings_for_acquisition(
         self,
-        auto_shutter=True,
+        autoShutter=True,
         binning="1x1",
-        multishutter_preset="LightEngineOnly",
-        sapphire_on_override="off",
-        sapphire_setpoint="10",
-        exposure_ms=10,
+        multishutterPreset="LightEngineOnly",
+        sapphireOnOverride="off",
+        sapphireSetpoint="10",
+        exposureMs=10,
     ):
         pass
     # def check_camera_res
@@ -111,7 +111,7 @@ class PycroInterface:
     lightengine_group_presets = ["Off", "OnHalf", "OnFull"]
     multishutter_group_presets = ["LightEngineOnly", "LaserOnly", "LightEngineAndLaser", "NoMembers"]
     sapphire_group_presets = ["10to110"]
-    sapphire_on_override_group_presets = ["on", "off"]
+    sapphireOnOverride_group_presets = ["on", "off"]
     sapphire_power_setpoint_group_presets = ["10", "60", "110"]
     
     def __init__(self):
@@ -140,11 +140,11 @@ class PycroInterface:
         return pixels
     
     def check_camera_res(self):
-        prev_auto_shutter = self.core.get_auto_shutter()
-        self.core.set_auto_shutter(False)
+        prev_autoShutter = self.core.get_autoShutter()
+        self.core.set_autoShutter(False)
         self.core.snap_image()
         tagged_image = self.core.get_tagged_image()
-        self.core.set_auto_shutter(prev_auto_shutter)
+        self.core.set_autoShutter(prev_autoShutter)
 
         
         return {
@@ -155,27 +155,27 @@ class PycroInterface:
     
     def set_imaging_settings_for_acquisition(
         self,
-        auto_shutter=True,
+        autoShutter=True,
         binning="1x1",
-        multishutter_preset="LightEngineOnly",
-        sapphire_on_override="off",
-        sapphire_setpoint="10",
-        exposure_ms=10,
+        multishutterPreset="LightEngineOnly",
+        sapphireOnOverride="off",
+        sapphireSetpoint="10",
+        exposureMs=10,
     ):
-        if multishutter_preset not in self.multishutter_group_presets:
-            raise Exception("Invalid MultiShutterMembers preset '{}': must be from list '{}'".format(multishutter_preset, self.multishutter_group_presets))
-        if sapphire_on_override not in self.sapphire_on_override_group_presets:
-            raise Exception("Invalid SapphireOnOverride preset '{}': must be from list '{}'".format(sapphire_on_override, self.sapphire_on_override_group_presets))
-        if sapphire_setpoint not in self.sapphire_power_setpoint_group_presets:
-            raise Exception("Invalid SapphirePowerSetpoint preset '{}': must be from list '{}'".format(sapphire_setpoint, self.sapphire_power_setpoint_group_presets))
+        if multishutterPreset not in self.multishutter_group_presets:
+            raise Exception("Invalid MultiShutterMembers preset '{}': must be from list '{}'".format(multishutterPreset, self.multishutter_group_presets))
+        if sapphireOnOverride not in self.sapphireOnOverride_group_presets:
+            raise Exception("Invalid SapphireOnOverride preset '{}': must be from list '{}'".format(sapphireOnOverride, self.sapphireOnOverride_group_presets))
+        if sapphireSetpoint not in self.sapphire_power_setpoint_group_presets:
+            raise Exception("Invalid SapphirePowerSetpoint preset '{}': must be from list '{}'".format(sapphireSetpoint, self.sapphire_power_setpoint_group_presets))
         
 
-        self.core.set_auto_shutter(auto_shutter)
+        self.core.set_autoShutter(autoShutter)
         self.core.set_shutter_device("Multi Shutter")
         self.core.set_property(self.camera_device_name, "Binning", binning)
-        self.core.set_config("SapphireOnOverride", sapphire_on_override)
-        self.core.set_config("MultiShutterMembers", multishutter_preset)
-        self.core.set_exposure(exposure_ms)
+        self.core.set_config("SapphireOnOverride", sapphireOnOverride)
+        self.core.set_config("MultiShutterMembers", multishutterPreset)
+        self.core.set_exposure(exposureMs)
 
         print("Set imaging settings")
 
@@ -235,12 +235,12 @@ class PycroInterface:
                 raise PycroConnectionError("Micromanager is missing SapphireMinAndMaxPower group setting '{}'".format(s_set))
         
 
-        java_sapphire_on_override = self.core.get_available_configs("SapphireOnOverride")
-        mm_sapphire_on_override_sets = [java_sapphire_on_override.get(i) for i in range(java_sapphire_on_override.size())]
+        java_sapphireOnOverride = self.core.get_available_configs("SapphireOnOverride")
+        mm_sapphireOnOverride_sets = [java_sapphireOnOverride.get(i) for i in range(java_sapphireOnOverride.size())]
 
         
-        for s_on_set in self.sapphire_on_override_group_presets:
-            if s_on_set not in mm_sapphire_on_override_sets:
+        for s_on_set in self.sapphireOnOverride_group_presets:
+            if s_on_set not in mm_sapphireOnOverride_sets:
                 raise PycroConnectionError("Micromanager is missing SapphireOnOverride setting '{}'".format(s_on_set))
         
 

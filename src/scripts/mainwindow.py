@@ -93,7 +93,7 @@ class MainWindow(QMainWindow):
     
     def calibrateDmdButtonClicked(self):
         print("Calibrating dmd")
-        dmdcalibrationdialog = DmdCalibrationDialog(self.pycroInterface, self.raspiInterface, using_standins=self.useStandIns)
+        dmdcalibrationdialog = DmdCalibrationDialog(self.pycroInterface, self.raspiInterface, usingStandins=self.useStandIns)
         dmdcalibrationdialog.exec()
 
         

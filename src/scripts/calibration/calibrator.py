@@ -6,12 +6,13 @@ from ..constants import DmdConstants
 class CalibrationException(Exception):
     pass
 
+
 class Calibrator:
-    def __init__(self, pycroInterface, raspiImageSender, camera_exposure_ms, using_standins=False):
+    def __init__(self, pycroInterface, raspiInterface, cameraExposureMs, usingStandins=False):
         self.pycroInterface = pycroInterface
-        self.raspiImageSender = raspiImageSender
-        self.camera_exposure_ms = camera_exposure_ms
-        self.using_standins = using_standins
+        self.raspiInterface = raspiInterface
+        self.cameraExposureMs = cameraExposureMs
+        self.usingStandins = usingStandins
         
         self.dmd_dims = ( DmdConstants.DMD_H, DmdConstants.DMD_W )
         
@@ -19,10 +20,7 @@ class Calibrator:
         self.solid_field_calculation_gaussian_blur_sigma = 201
 
         self.max_relative_variance_rel_to_b_w_diff = 0.1
-        # self.max_dark_field_var_rel_to_b_w_diff = 0.1
-        # self.max_bright_field_var_rel_to_b_w_diff = 0.1
         
-        self.pycromanager_ready = False
         self._solid_bright_field_cam_pics = None
         self._solid_dark_field_cam_pics = None
         self._dark_level = None
@@ -30,54 +28,50 @@ class Calibrator:
     
     def turn_on_laser_and_setup_pycromanager(self):
         self.pycroInterface.set_imaging_settings_for_acquisition(
-            multishutter_preset="NoMembers",
-            sapphire_on_override="on",
-            exposure_ms=self.camera_exposure_ms,
-            sapphire_setpoint="110",
-            )
-        
-        self.pycromanager_ready = True
+            multishutterPreset="NoMembers",
+            sapphireOnOverride="on",
+            exposureMs=self.cameraExposureMs,
+            sapphireSetpoint="110",
+            )    
     
-    def calibrate_solid_bright_field(self):
-        if not self.pycromanager_ready:
-            raise CalibrationException("Cannot calibrate bright solid field before pycromanager has been setup through Calibrator")
-        
-        solid_bright_field_dmd_pattern = np.ones(self.dmd_dims, dtype=float)
-        self.raspiImageSender.send_image(solid_bright_field_dmd_pattern)
-        
-        if self.using_standins:
-            self.pycroInterface.standin_pretend_solid_white()
+    def calibrate_solid_bright_and_dark_field(self):
+        try:
+            self.turn_on_laser_and_setup_pycromanager()
 
-        snapped_bright_pics = []
-        for i in range(self.number_of_solid_field_calibration_exposures):
-            cam_pic = self.pycroInterface.snap_pic()
-            snapped_bright_pics.append(cam_pic)
-        
-        self._solid_bright_field_cam_pics = snapped_bright_pics
-    
-    def get_solid_bright_cam_pics(self):
-        return self._solid_bright_field_cam_pics
-    
-    def calibrate_solid_dark_field(self):
-        if not self.pycromanager_ready:
-            raise CalibrationException("Cannot calibrate dark solid field before pycromanager has been setup through Calibrator")
-        
-        solid_dark_field_dmd_pattern = np.zeros(self.dmd_dims, dtype=float)
-        self.raspiImageSender.send_image(solid_dark_field_dmd_pattern)
-        
-        if self.using_standins:
-            self.pycroInterface.standin_pretend_solid_black()
+            with self.raspiInterface.image_sender() as raspiImageSender:
+                solid_bright_field_dmd_pattern = np.ones(self.dmd_dims, dtype=float)
+                raspiImageSender.send_image(solid_bright_field_dmd_pattern)
+                
+                if self.usingStandins:
+                    self.pycroInterface.standin_pretend_solid_white()
 
-        snapped_dark_pics = []
-        for i in range(self.number_of_solid_field_calibration_exposures):
-            cam_pic = self.pycroInterface.snap_pic()
-            snapped_dark_pics.append(cam_pic)
-        
-        self._solid_dark_field_cam_pics = snapped_dark_pics
+                snapped_bright_pics = []
+                for i in range(self.number_of_solid_field_calibration_exposures):
+                    cam_pic = self.pycroInterface.snap_pic()
+                    snapped_bright_pics.append(cam_pic)
+                
+                
+                solid_dark_field_dmd_pattern = np.zeros(self.dmd_dims, dtype=float)
+                raspiImageSender.send_image(solid_dark_field_dmd_pattern)
+                
+                if self.usingStandins:
+                    self.pycroInterface.standin_pretend_solid_black()
+
+                snapped_dark_pics = []
+                for i in range(self.number_of_solid_field_calibration_exposures):
+                    cam_pic = self.pycroInterface.snap_pic()
+                    snapped_dark_pics.append(cam_pic)
+            
+            self._solid_bright_field_cam_pics = snapped_bright_pics
+            self._solid_dark_field_cam_pics = snapped_dark_pics
+        except Exception as e:
+            raise CalibrationException(str(e))
+        finally:
+            self.turn_off_laser_and_turn_off_shutter()
+
     
-    def get_solid_dark_cam_pics(self):
-        return self._solid_dark_field_cam_pics
-    
+    def get_solid_bright_and_dark_cam_pics(self):
+        return self._solid_bright_field_cam_pics, self._solid_dark_field_cam_pics
     
     def get_bright_and_dark_levels(self):
         return self._bright_level, self._dark_level
@@ -152,16 +146,36 @@ class Calibrator:
         self._bright_level = np.average(avg_bright[illuminated_section_mask])
         self._illuminated_section_mask = illuminated_section_mask
 
+    
+    def calibrate_coords(self):
+        if self._bright_level is None or self._dark_level is None:
+            raise CalibrationException("Must calibrate bright and dark levels before calibrating coordinates")
         
-        # self._bright_level = bright_level
-        # self._dark_level = dark_level
+        # circle_diameter = 51
+        # edge_margin = math.ceil(circle_diameter / 2)
+        
+        # gridXPositions = np.arange(edge_margin, DmdConstants.DMD_W - 1 - edge_margin, 200)
+        # gridYPositions = np.arange(edge_margin, DmdConstants.DMD_H - 1 - edge_margin, 200)
 
-        # return dark_level, bright_level
+        # for x_pos in gridXPositions:
+        #     for y_pos in gridYPositions:
+        #         self.show_status(Messages.displaying_calibration_circle_at_dmd_coords + " {}, {}".format(
+        #             x_pos,
+        #             y_pos
+        #         ))
+        #         marker_img_dmd = np.zeros( (DmdConstants.DMD_H, DmdConstants.DMD_W), dtype=float)
 
-            
+        #         draw_white_circle(marker_img_dmd, circle_diameter, x_pos, y_pos)
+        #         # circle_
+
+        #         # print("Showing calibration circle at x {}, y {} on dmd".format(circle_dmd_x, circle_dmd_y))
+        #         # marker_img_dmd = np.zeros( (DMD_H, DMD_W), dtype=float)
+
+
+
     
     def turn_off_laser_and_turn_off_shutter(self):
         self.pycroInterface.set_imaging_settings_for_acquisition(
-            multishutter_preset="NoMembers",
-            sapphire_on_override="off",
+            multishutterPreset="NoMembers",
+            sapphireOnOverride="off",
             )

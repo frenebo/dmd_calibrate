@@ -21,10 +21,6 @@ if __name__ == "__main__":
     if not os.path.exists(args.tempdir):
         raise Exception("Cannot find working dir '{}' - create it to continue".format(args.tempdir))
     
-    # print("using standins?:")
-    # if args.standins:
-    #     print("Using standins")
-
     app = QApplication([])
     
     window = MainWindow(args.tempdir, useStandIns=args.standins)

@@ -22,6 +22,7 @@ class Messages:
     connection_failed_title = "Connection Failed"
     invalid_field_title = "Invalid Field"
     solid_bright_field = "Solid bright field"
+    solid_bright_and_dark_field = "Solid bright and dark field"
     solid_dark_field = "Solid dark field"
     solid_bright_field_calibration_images = "Solid bright field calibration images"
     solid_dark_field_calibration_images = "Solid dark field calibration images"
@@ -31,3 +32,5 @@ class Messages:
     bright_level = "Bright Level"
     dark_level = "Dark Level"
     button_label_begin_coord_calibration = "Begin coord calibration"
+    done_calibrating_brightness = "Done calibrating brightness"
+    displaying_calibration_circle_at_dmd_coords = "Displaying calibration circle at DMD coords"

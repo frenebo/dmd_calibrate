@@ -511,24 +511,3 @@ def calibrate_geometry(core, raspi_controller, workdir):
     raspi_controller.send_image_to_feh(test_img_path)
     input("enter any input to close program. You can check out the pattern in micromanager now")
 
-# def calibrate(
-#     hostname,
-#     username,
-#     password,
-#     workdir):
-#     os.makedirs(workdir, exist_ok=True)
-
-
-#     with pycromanager.Bridge() as bridge:
-#         core = bridge.get_core()
-#         raspi_controller = RaspiInterface(hostname, username, password)
-
-#         raspi_controller.start_feh()
-
-#         try:
-#             calibrate_geometry(core, raspi_controller, workdir)
-#         except:
-#             raspi_controller.kill_feh()
-#             raise
-#         raspi_controller.kill_feh()
-
