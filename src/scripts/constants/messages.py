@@ -22,5 +22,7 @@ class Messages:
     connection_failed_title = "Connection Failed"
     invalid_field_title = "Invalid Field"
     solid_bright_field = "Solid bright field"
+    solid_dark_field = "Solid dark field"
     calibrating_colon = "Calibrating "
     starting_calibration = "Starting Calibration"
+    calibration_error = "Calibration Error"

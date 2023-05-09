@@ -1,5 +1,6 @@
 import pycromanager
 import numpy as np
+import random
 
 class PycroConnectionError(Exception):
     pass
@@ -10,7 +11,12 @@ class StandInPycroInterface:
     
     def snap_pic(self):
         dat = np.zeros((2000,2000), dtype=np.uint16)
-        dat[500:1500,500:1500] = 2000
+        for i in range(5):
+            xlim1, xlim2 = random.randint(0,2000), random.randint(0,2000)
+            ylim1, ylim2 = random.randint(0,2000), random.randint(0,2000)
+            xmin, xmax = min(xlim1, xlim2), max(xlim1, xlim2)
+            ymin, ymax = min(ylim1, ylim2), max(ylim1, ylim2)
+            dat[xmin:xmax,ymin:ymax] = random.randint(1000,2000)
         return dat
         
     

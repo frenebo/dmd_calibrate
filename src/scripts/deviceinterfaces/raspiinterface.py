@@ -23,12 +23,13 @@ def save_local_img_for_dmd(np_float_img, path):
 class RaspiConnectionError(Exception):
     pass
 
-
-# class StandInRaspiImageSender:
-#     def __init__(self):
-#         pass
+class StandInRaspiImageSender:
+    def __init__(self):
+        pass
     
-#     def 
+    def send_image(self, np_float_img):
+        pass
+
 
 class StandInRaspiImageSenderContextManager:
     def __init__(self):
@@ -37,7 +38,7 @@ class StandInRaspiImageSenderContextManager:
     def __enter__(self):
         return StandInRaspiImageSender()
     
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_value, traceback):
         pass
 
 class StandInRaspiInterface:
@@ -127,7 +128,6 @@ class RaspiImageSender:
         self._feh_running = False
         print("Killed feh")
     
-    
     def send_image(self, np_float_img):
         if not self._feh_running:
             raise Exception("Can't send images to show without feh up and running, should call start_feh before send_image_to_feh")
@@ -185,9 +185,6 @@ class RaspiImageSender:
 
         # Come up with path for new image. Shouldn't be the same as the previous one
 
-    
-    
-
 class RaspiImageSenderContextManager:
     def __init__(self, ssh_client, img_tempdirpath, raspi_remote_img_dirpath):
         self.ssh_client = ssh_client
@@ -205,12 +202,11 @@ class RaspiImageSenderContextManager:
         self.sender = RaspiImageSender(self.ssh_client, self.img_tempdirpath, self.raspi_remote_img_dirpath)
         self.sender.start_feh()
     
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_value, traceback):
         if not self.entered:
             raise RuntimeError("__exit__ called on RaspiImageSenderContextManager without __enter__ called.")
         self.sender.kill_feh()
         self.exited = True
-
 
 class RaspiInterface:
     def __init__(self, hostname, username, password, tempdirpath):
