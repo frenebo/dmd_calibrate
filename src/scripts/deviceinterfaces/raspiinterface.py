@@ -1,7 +1,11 @@
 import paramiko
 import json
 import time
+import numpy as np
 import os
+import tifffile
+
+from ..constants import DmdConstants
 
 def save_local_img_for_dmd(np_float_img, path):
     assert np_float_img.dtype == float, "Image should be float array"
@@ -67,20 +71,16 @@ class RaspiImageSender:
     
     def start_feh(self):
         # Make directory for slideshow symlinks to images, if it doesn't exist already
-        stdin, stdout, stderr = self.ssh_client.exec_command("mkdir -p '{}'".format(self.remote_slideshow_symlinks_folder))
-        self._raise_exception_if_stderr_not_empty(stdout, stderr)
+        self.run_command_on_raspi("mkdir -p '{}'".format(self.remote_slideshow_symlinks_folder))
 
         # Make directory for image files themselves, if it doesn't exist already
-        stdin, stdout, stderr = self.ssh_client.exec_command("mkdir -p '{}'".format(self.remote_image_folder))
-        self._raise_exception_if_stderr_not_empty(stdout, stderr)
+        self.run_command_on_raspi("mkdir -p '{}'".format(self.remote_image_folder))
 
         # Clear out symlink directory in case it has leftover files from before
-        stdin, stdout, stderr = self.ssh_client.exec_command("rm '{}'/*".format(self.remote_slideshow_symlinks_folder))
-        self._raise_exception_if_stderr_not_empty(stdout, stderr)
+        self.run_command_on_raspi("rm -f '{}'/*".format(self.remote_slideshow_symlinks_folder))
         
         # Clear out image file directory in case it has leftover files from before
-        stdin, stdout, stderr = self.ssh_client.exec_command("rm '{}'/*".format(self.remote_image_folder))
-        self._raise_exception_if_stderr_not_empty(stdout, stderr)
+        self.run_command_on_raspi("rm -f '{}'/*".format(self.remote_image_folder))
         
         # Make placeholder with ImageMagick's convert command
         # Put placeholder image in image folder and symlink in slideshow folder, so feh program doesn't exit 
@@ -91,11 +91,9 @@ class RaspiImageSender:
 
         placeholder_command = "convert -size 100x100 xc:black '{}'".format(placeholder_tiff_path)
         print("Creating placeholder image: {}".format(placeholder_command))
-        stdin, stdout, stderr = self.ssh_client.exec_command(placeholder_command)
-        self._raise_exception_if_stderr_not_empty(stdout, stderr)
+        self.run_command_on_raspi(placeholder_command)
 
-        stdin, stdout, stderr = self.ssh_client.exec_command("ln -fs '{}' '{}'".format(placeholder_tiff_path, placeholder_symlink_path))
-        self._raise_exception_if_stderr_not_empty(stdout, stderr)
+        self.run_command_on_raspi("ln -fs '{}' '{}'".format(placeholder_tiff_path, placeholder_symlink_path))
         self.tiffname_currently_on_pi = placeholder_tiff_name
 
         # Execute command and detach
@@ -108,26 +106,33 @@ class RaspiImageSender:
         feh_command = "export DISPLAY=:0; feh --reload 0.1 --hide-pointer --fullscreen --auto-zoom '{}' &".format(
             self.remote_slideshow_symlinks_folder,
         )
-        stdin, stdout, stderr = self.ssh_client.exec_command(feh_command)
+        self.run_command_on_raspi(feh_command, wait_for_output=False)
         
         self._feh_running = True
         print("Started feh: '{}'".format(feh_command))
 
     
-    def _raise_exception_if_stderr_not_empty(self, stdout, stderr):
+    def run_command_on_raspi(self, command, wait_for_output=True):
+        print("executing command '{}'".format(command))
+        stdin, stdout, stderr = self.ssh_client.exec_command(command)
+
+        if not wait_for_output:
+            return
+
+        print("reading output")
         script_output = stdout.readlines()
+        print("reading error")
         script_err = stderr.readlines()
         
         if len(script_err)!= 0:
-            text_stderr = "".join(script_err)
-            text_stdout = "".join(script_output)
-            raise Exception("Error with pi program:\nstderr:\n"+text_stderr+"\nstdout:\n" + text_stdout)
+            text_stderr = "\n".join(script_err)
+            text_stdout = "\n".join(script_output)
+            raise Exception("Error with pi running command:\n{}\nstderr:\n{}\nstdout:\n{}".format(command, text_stderr, text_stdout))
     
     
     def kill_feh(self):
-        stdin, stdout, stderr = self.ssh_client.exec_command("pkill feh")
+        self.run_command_on_raspi("pkill feh")
         
-        self._raise_exception_if_stderr_not_empty(stdout, stderr)
         
         self._feh_running = False
         print("Killed feh")
@@ -138,8 +143,8 @@ class RaspiImageSender:
         
         
 
-        img_path = os.path.join(self.local_image_temp_dirpath, "imgfordmd.tiff")
-        save_local_img_for_dmd(np_float_img, img_path)
+        local_image_path = os.path.join(self.local_image_temp_dirpath, "imgfordmd.tiff")
+        save_local_img_for_dmd(np_float_img, local_image_path)
         
         # Need a new name for the image
         while "pattern_{}.tiff".format(self.sent_image_name_counter) == self.tiffname_currently_on_pi:
@@ -157,37 +162,32 @@ class RaspiImageSender:
         ftp_client.close()
 
         # Create a symlink in remote slideshow symlink folder so that feh will see it
-        stdin, stdout, stderr = self.ssh_client.exec_command("ln -fs '{}' '{}'".format(
+        self.run_command_on_raspi("ln -fs '{}' '{}'".format(
             remote_path_for_image,
             remote_path_for_symlink,
         ))
-        self._raise_exception_if_stderr_not_empty(stdout, stderr)
         
         print("Copied local image '{}' to Pi path '{}', with symlink to it at '{}'".format(local_image_path, remote_path_for_image, remote_path_for_symlink))
 
         # Remove symlink for old image, then on the next update feh should read from the new image
         old_symlinkpath = self.remote_slideshow_symlinks_folder + "/" + self.tiffname_currently_on_pi
-        stdin, stdout, stderr = self.ssh_client.exec_command("rm '{}'".format(
+        self.run_command_on_raspi("rm '{}'".format(
             old_symlinkpath,
         ))
-        self._raise_exception_if_stderr_not_empty(stdout, stderr)
 
         time.sleep(0.2)
 
         old_imagepath = self.remote_image_folder + "/" + self.tiffname_currently_on_pi
         # Remove old file
-        stdin, stdout, stderr = self.ssh_client.exec_command("rm '{}'".format(
+        self.run_command_on_raspi("rm '{}'".format(
             old_imagepath
         ))
-        self._raise_exception_if_stderr_not_empty(stdout, stderr)
 
         print("Removed old '{}' and '{}' from Pi".format( old_symlinkpath, old_imagepath))
 
         # Set tiffname_currently_on_pi to the new filename
         self.tiffname_currently_on_pi = new_tiff_name
 
-
-        # Come up with path for new image. Shouldn't be the same as the previous one
 
 class RaspiImageSenderContextManager:
     def __init__(self, ssh_client, img_tempdirpath, raspi_remote_img_dirpath):
@@ -205,6 +205,8 @@ class RaspiImageSenderContextManager:
         
         self.sender = RaspiImageSender(self.ssh_client, self.img_tempdirpath, self.raspi_remote_img_dirpath)
         self.sender.start_feh()
+
+        return self.sender
     
     def __exit__(self, exc_type, exc_value, traceback):
         if not self.entered:

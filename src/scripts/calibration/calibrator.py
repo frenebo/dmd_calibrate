@@ -39,6 +39,7 @@ class Calibrator:
             self.turn_on_laser_and_setup_pycromanager()
 
             with self.raspiInterface.image_sender() as raspiImageSender:
+                print(raspiImageSender)
                 solid_bright_field_dmd_pattern = np.ones(self.dmd_dims, dtype=float)
                 raspiImageSender.send_image(solid_bright_field_dmd_pattern)
                 

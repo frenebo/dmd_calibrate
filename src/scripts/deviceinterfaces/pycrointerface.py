@@ -141,10 +141,10 @@ class PycroInterface:
     
     def check_camera_res(self):
         prev_autoShutter = self.core.get_autoShutter()
-        self.core.set_autoShutter(False)
+        self.core.set_auto_shutter(False)
         self.core.snap_image()
         tagged_image = self.core.get_tagged_image()
-        self.core.set_autoShutter(prev_autoShutter)
+        self.core.set_auto_shutter(prev_autoShutter)
 
         
         return {
@@ -170,7 +170,7 @@ class PycroInterface:
             raise Exception("Invalid SapphirePowerSetpoint preset '{}': must be from list '{}'".format(sapphireSetpoint, self.sapphire_power_setpoint_group_presets))
         
 
-        self.core.set_autoShutter(autoShutter)
+        self.core.set_auto_shutter(autoShutter)
         self.core.set_shutter_device("Multi Shutter")
         self.core.set_property(self.camera_device_name, "Binning", binning)
         self.core.set_config("SapphireOnOverride", sapphireOnOverride)
