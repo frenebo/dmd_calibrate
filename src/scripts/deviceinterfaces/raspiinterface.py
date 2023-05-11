@@ -113,16 +113,18 @@ class RaspiImageSender:
 
     
     def run_command_on_raspi(self, command, wait_for_output=True):
-        print("executing command '{}'".format(command))
+        if wait_for_output:
+            print("executing command '{}', waiting for command to finish ... ".format(command), end="")
+        else:
+            print("executing command '{}'".format(command))
         stdin, stdout, stderr = self.ssh_client.exec_command(command)
 
         if not wait_for_output:
             return
 
-        print("reading output")
         script_output = stdout.readlines()
-        print("reading error")
         script_err = stderr.readlines()
+        print("finished")
         
         if len(script_err)!= 0:
             text_stderr = "\n".join(script_err)
@@ -135,7 +137,6 @@ class RaspiImageSender:
         
         
         self._feh_running = False
-        print("Killed feh")
     
     def send_image(self, np_float_img):
         if not self._feh_running:
