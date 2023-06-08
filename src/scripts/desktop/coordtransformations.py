@@ -30,7 +30,6 @@ def best_fit_affine_transform(dmd_coords, camera_coords):
 
 def transform_camera_to_dmd_image(desired_cam_image, cam_to_dmd_Tmat):
     raise NotImplementedError
-    pass
 
 
 
