@@ -3,11 +3,15 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 def best_fit_affine_transform(dmd_coords, camera_coords):
-    dmd_coords = np.array(dmd_coords)
-    camera_coords = np.array(camera_coords)
-
+    dmd_coords = np.array(dmd_coords).astype(float)
+    camera_coords = np.array(camera_coords).astype(float)
+    
+    # Make sure input data is correctly formatted
     assert dmd_coords.shape == camera_coords.shape, "dmd and camera coordinate arrays should have same shape"
     assert dmd_coords.shape[0] == 2, "coord arrays should be (2xN), instead got {}".format(dmd_coords.shape)
+    
+    # Make sure there is sufficient data to fit coordinates
+    assert dmd_coords.shape[1] >= 3, "Cannot fit transformation with less than three pairs of points."
 
     N = dmd_coords.shape[1]
 
@@ -33,55 +37,4 @@ def best_fit_affine_transform(dmd_coords, camera_coords):
 
 def transform_camera_to_dmd_image(desired_cam_image, cam_to_dmd_Tmat):
     raise NotImplementedError
-
-
-
-# def test_transformation():
-#     # Create two subplots and unpack the output array immediately
-#     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,5))
-
-#     points = np.array([
-#         (3, 3),
-#         (3, 10),
-#         (10,3),
-#         (10, 10),
-#         (3,5),
-#         (4,10),
-#         (3,8),
-#     ],  dtype=float).T
-
-#     A = np.array([
-#         [0.8,0.2],
-#         [-0.2,0.8],
-#     ], dtype=float)
-
-
-
-#     origX, origY =  points
-
-#     ax1.scatter(origX, origY, marker='.')
-#     ax1.set_xlim(0,15)
-#     ax1.set_ylim(0,15)
-#     ax2.set_xlim(0,15)
-#     ax2.set_ylim(0,15)
-
-#     b = np.array([1.0, 2.0])
-
-#     new_points = A @ points + b[:, None]
-
-#     new_points[0][0] += 1
-
-#     newX, newY = new_points
-
-#     fitT = best_fit_affine_transform(points, new_points)
-
-#     fitA = fitT[:,:2]
-#     fitb = fitT[:,2:3]
-
-#     predX, predY = fitA @ points + fitb[:, None]
-
-#     plt.scatter(origX, origY, color='b')
-#     plt.scatter(newX, newY, color='g')
-#     plt.scatter(predX, predY, color='r')
-#     plt.show()
 
