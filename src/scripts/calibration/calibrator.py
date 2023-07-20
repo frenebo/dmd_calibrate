@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 
 from ..constants import DmdConstants
+from ..desktop.coordtransformations import best_fit_affine_transform
 
 class CalibrationException(Exception):
     pass
@@ -16,15 +17,29 @@ class Calibrator:
         
         self.dmd_dims = ( DmdConstants.DMD_H, DmdConstants.DMD_W )
         
+        # Brightness calibration configuration
         self.number_of_solid_field_calibration_exposures = 10
         self.solid_field_calculation_gaussian_blur_sigma = 201
 
         self.max_relative_variance_rel_to_b_w_diff = 0.1
         
+        # Brightness calibration results
         self._solid_bright_field_cam_pics = None
         self._solid_dark_field_cam_pics = None
         self._dark_level = None
         self._bright_level = None
+        
+        # Coordinate calibration configuration
+        self.circle_diameter = 31
+        self.circle_spacing = 100
+        self.circle_identification_gaussian_blur_sigma = 100
+        
+        # Throw out identified circle candidates that too close enough to edge
+        self.min_blob_distance_to_edge = 50
+        self.blob_min_circularity = 0.75
+        
+        # Coordinate calibration results
+        self._dmd_coords_and_acquired_images = None
     
     def turn_on_laser_and_setup_pycromanager(self):
         self.pycroInterface.set_imaging_settings_for_acquisition(
@@ -34,12 +49,11 @@ class Calibrator:
             sapphireSetpoint="110",
             )    
     
-    def calibrate_solid_bright_and_dark_field(self):
+    def take_solid_bright_and_dark_field_data(self):
         try:
             self.turn_on_laser_and_setup_pycromanager()
 
             with self.raspiInterface.image_sender() as raspiImageSender:
-                print(raspiImageSender)
                 solid_bright_field_dmd_pattern = np.ones(self.dmd_dims, dtype=float)
                 raspiImageSender.send_image(solid_bright_field_dmd_pattern)
                 
@@ -70,16 +84,11 @@ class Calibrator:
         finally:
             self.turn_off_laser_and_turn_off_shutter()
 
-    
     def get_solid_bright_and_dark_cam_pics(self):
         return self._solid_bright_field_cam_pics, self._solid_dark_field_cam_pics
     
     def get_bright_and_dark_levels(self):
         return self._bright_level, self._dark_level
-    
-    def get_illuminated_section_mask(self):
-        return self._illuminated_section_mask
-
     
     def calculate_bright_and_dark_levels(self):
         if self._solid_dark_field_cam_pics == None or self._solid_bright_field_cam_pics == None:
@@ -147,11 +156,169 @@ class Calibrator:
         self._bright_level = np.average(avg_bright[illuminated_section_mask])
         self._illuminated_section_mask = illuminated_section_mask
 
+    def create_calibration_positions(self):
+        assert int(self.circle_diameter) == self.circle_diameter, "Circle diameter should be integer number of pixels"
+        assert self.circle_diameter % 2 == 1, "Calibration circle diameter should be odd"
+        
+        # Radius rounded down = circle_diameter // 2
+        x_min = self.circle_diameter // 2
+        x_max = self.dmd_dims[1] - 1 - self.circle_diameter // 2
+        
+        y_min = self.circle_diameter // 2
+        y_max = self.dmd_dims[0] - 1 - self.circle_diameter // 2
+        
+        if y_max - y_min < self.circle_spacing or x_max - x_min < self.circle_spacing:
+            raise Exception("Provided circle spacing is too large to fit on dmd: diameter = {}, spacing = {}, DMD dimensions = {}".format(
+                self.circle_diameter,
+                self.circle_spacing,
+                self.dmd_dims,
+                ))
+        
+        num_x = (x_max - x_min) // self.circle_spacing
+        num_y = (y_max - y_min) // self.circle_spacing
+        
+        # Round to evenly spaced coordinates to integers
+        x_positions = np.rint(np.linspace(x_min, x_max, num_x))
+        y_positions = np.rint(np.linspace(y_min, y_max, num_y))
+        
+        return x_positions, y_positions
     
-    def calibrate_coords(self):
+    def create_circle_pattern_at_position(self, x_pos, y_pos):
+        yy,xx = np.meshgrid(np.arange(self.dmd_dims[0]), np.arange(self.dmd_dims[1]))
+        
+        radius = self.circle_diameter / 2 # float - if diameter = 5, radius = 2.5
+        # Mask is true within radius from y_pos, x_pos
+        circle_mask = (yy - y_pos) ** 2 + (xx - x_pos) ** 2 <= radius ** 2
+        
+        pattern = np.zeros(self.dmd_dims, dtype=float)
+        pattern[circle_mask] = 1.0
+        
+        return pattern
+    
+    def take_coord_calibration_data(self):
         if self._bright_level is None or self._dark_level is None:
             raise CalibrationException("Must calibrate bright and dark levels before calibrating coordinates")
         
+        try:
+            self.turn_on_laser_and_setup_pycromanager()
+            
+            with self.raspiInterface.image_sender() as raspiImageSender:
+                # Take calibration data
+                x_positions, y_positions = self.create_calibration_positions()
+                
+                data_taken = []
+                
+                for y_pos in y_positions:
+                    for x_pos in x_positions:
+                        pattern = self.create_circle_pattern_at_position(x_pos, y_pos)
+                        raspiImageSender.send_image(pattern)
+                        
+                        cam_pic = self.pycroInterface.snap_pic()
+                        data_taken.append({
+                            "dmd_x_pos": x_pos,
+                            "dmd_y_pos": y_pos,
+                            "cam_pic": cam_pic,
+                        })
+                self._dmd_coords_and_acquired_images = data_taken
+                
+        except Exception as e:
+            raise CalibrationException(str(e))
+        finally:
+            self.turn_off_laser_and_turn_off_shutter()
+    
+    def find_blobs_in_photo(self, cam_pic):
+        # Change coordinate order to match the x,y order used by cv2
+        cv2_image = np.swapaxes(cam_pic, 0, 1)
+        thresh = (self._bright_level + self._dark_level) / 2
+        
+        sig = self.circle_identification_gaussian_blur_sigma
+        blurred = cv2.GaussianBlur(cv2_image, (sig, sig), 0)
+        above_thresh = np.uint8(blurred > thresh)
+        
+        img_contours, _ = cv2.findContours(above_thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)        
+        
+        good_blobs = []
+        
+        for i in range(len(img_contours)):
+            contour = img_contours[i]
+            
+            area = cv2.contourArea(contour)
+            perimeter = cv2.arcLength(contour,True)
+
+            if perimeter <= 0 or area <= 0:
+                continue
+
+            circularity = 2*np.sqrt(np.pi*area) / perimeter
+            
+            if circularity < self.blob_min_circularity:
+                continue
+
+            x_min, y_min, x_width, y_height = cv2.boundingRect(contour)
+
+            is_touching_edge = (
+                (x_min <= self.min_blob_distance_to_edge) or
+                (y_min <= self.min_blob_distance_to_edge) or
+                (x_min + x_width - 1 >= cv2_image.shape[0] - self.min_blob_distance_to_edge) or
+                (y_min + y_height - 1 >= cv2_image.shape[1] - self.min_blob_distance_to_edge)
+                )
+                
+            if is_touching_edge:
+                continue
+
+            M = cv2.moments(contour)
+
+            cx = M["m10"]/M["m00"]
+            cy = M["m01"]/M["m00"]
+            
+            good_blobs.append({
+                "cx": cx,
+                "cy": cy,
+                "contour": contour,
+                "area": area,
+            })
+        
+        return good_blobs
+    
+    def calculate_coord_calibration(self):
+        if self._dmd_coords_and_acquired_images == None:
+            raise CalibrationException("Cannot calculate coordinate calibration, have not yet taken coord calibration data.")
+        
+        if self._dark_level is None or self._bright_level is None:
+            raise CalibrationException("Cannot calculate coordinate calibration, bright and dark level has not been calculated yet.")
+        
+        # data_pts:
+        coord_pairs = []
+        for data_pt in self._dmd_coords_and_acquired_images:
+            dmd_x = data_pt["dmd_x_pos"]
+            dmd_y = data_pt["dmd_y_pos"]
+            cam_pic = data_pt["cam_pic"]
+            
+            found_blobs = self.find_blobs_in_photo(cam_pic)
+            
+            if len(found_blobs) != 0:
+                continue
+            
+            cam_x = found_blobs[0]["cx"]
+            cam_y = found_blobs[0]["cy"]
+            coord_pairs.append({
+                "cam_x": cam_x,
+                "cam_y": cam_y,
+                "dmd_x": dmd_x,
+                "dmd_y": dmd_y,
+            })
+        
+        dmd_coords = [[p["dmd_x"], p["dmd_y"]] for p in coord_pairs]
+        cam_coords = [[p["cam_x"], p["cam_y"]] for p in coord_pairs]
+        
+        # Transform to 2xN arrays
+        dmd_coords = np.array(dmd_coords).T
+        cam_coords = np.array(cam_coords).T
+        
+        A, b = best_fit_affine_transform(dmd_coords, cam_coords)
+        
+        print("A: {}, b: {}".format(A,b))
+            
+        # blurred = cv2.GaussianBlur()
         # circle_diameter = 51
         # edge_margin = math.ceil(circle_diameter / 2)
         

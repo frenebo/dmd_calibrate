@@ -25,8 +25,11 @@ def best_fit_affine_transform(dmd_coords, camera_coords):
     cam_coeffs_y = np.linalg.lstsq(dmd_coords, camera_coords_y, rcond=None)[0].T[0]
 
     T = np.vstack( [cam_coeffs_x, cam_coeffs_y] )
+    
+    A = T[:,:2]
+    b = T[:,2:3]
 
-    return T
+    return A,b
 
 def transform_camera_to_dmd_image(desired_cam_image, cam_to_dmd_Tmat):
     raise NotImplementedError

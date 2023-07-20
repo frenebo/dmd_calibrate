@@ -70,7 +70,7 @@ def draw_white_circle(np_float_img, diameter, center_x, center_y):
 
 
 class CoordCalibrationDialog(QDialog):
-    def __init__(self, pycroInterface, raspiInterface, exposureMs, usingStandins=False):
+    def __init__(self, pycroInterface, raspiInterface, calibrator, exposureMs, usingStandins=False):
         super().__init__()
         self.setWindowTitle("Dmd Coordinate Calibration")
 
@@ -78,6 +78,7 @@ class CoordCalibrationDialog(QDialog):
         self.raspiInterface = raspiInterface
         self.exposureMs = exposureMs
         self.usingStandins = usingStandins
+        self.calibrator = calibrator
 
         self.vlayout = QVBoxLayout()
         
@@ -89,19 +90,28 @@ class CoordCalibrationDialog(QDialog):
         self.calibrate()
     
     def calibrate(self):
+        self.show_status(Messages.starting_calibration)
+        
+        self.calibrator.take_coord_calibration_data()
+        self.calibrator.calculate_coord_calibration()
+        
+        # @TODO For checking the model's error, make sure that the actual measurements are far apart
+        # @TODO enough for the error to mean something. If all the measurements are clustered to one
+        # @TODO point, any model will give a good result, but something is probably wrong.s
         pass
 
     def show_status(self, status_text):
         self.statusLabel.setText(status_text)
 
 class BrightnessCalibrationDialog(QDialog):
-    def __init__(self, pycroInterface, raspiInterface, exposureMs, usingStandins=False):
+    def __init__(self, pycroInterface, raspiInterface, calibrator, exposureMs, usingStandins=False):
         super().__init__()
 
         self.pycroInterface = pycroInterface
         self.raspiInterface = raspiInterface
         self.exposureMs = exposureMs
         self.usingStandins = usingStandins
+        self.calibrator = calibrator
 
         self.setWindowTitle("Dmd Brightness Calibration")
 
@@ -116,7 +126,7 @@ class BrightnessCalibrationDialog(QDialog):
         self.vlayout.addWidget(self.statusLabel)
 
         self.setLayout(self.vlayout)
-
+        
 
         self.calibrate()
 
@@ -132,15 +142,13 @@ class BrightnessCalibrationDialog(QDialog):
         bright_dark_calibration_error = None
         illuminated_section_mask = None
 
-        calibrator = Calibrator(self.pycroInterface, self.raspiInterface, self.exposureMs, usingStandins=self.usingStandins)
-
         self.show_status(Messages.calibrating_colon + Messages.solid_bright_and_dark_field)
         
-        calibrator.calibrate_solid_bright_and_dark_field()
-        solid_bright_pics, solid_dark_pics = calibrator.get_solid_bright_and_dark_cam_pics()
+        self.calibrator.take_solid_bright_and_dark_field_data()
+        solid_bright_pics, solid_dark_pics = self.calibrator.get_solid_bright_and_dark_cam_pics()
         
-        calibrator.calculate_bright_and_dark_levels()
-        bright_level, dark_level = calibrator.get_bright_and_dark_levels()
+        self.calibrator.calculate_bright_and_dark_levels()
+        bright_level, dark_level = self.calibrator.get_bright_and_dark_levels()
         
         self.show_status(Messages.done_calibrating_brightness)
         
@@ -176,14 +184,13 @@ class BrightnessCalibrationDialog(QDialog):
             dlg = ErrorDialog(Messages.calibration_error, bright_dark_calibration_error)
             dlg.exec()
         else:
-
             beginCoordCalibrationButton = QPushButton(Messages.button_label_begin_coord_calibration)
             beginCoordCalibrationButton.clicked.connect(self.beginCoordCalibrationButtonClicked)
 
             self.vlayout.addWidget(beginCoordCalibrationButton)
     
     def beginCoordCalibrationButtonClicked(self):
-        dlg = CoordCalibrationDialog(self.pycroInterface, self.raspiInterface, self.exposureMs, usingStandins=self.usingStandins)
+        dlg = CoordCalibrationDialog(self.pycroInterface, self.raspiInterface, self.calibrator, self.exposureMs, usingStandins=self.usingStandins)
         dlg.exec()
 
 
@@ -213,6 +220,8 @@ class DmdCalibrationDialog(QDialog):
         self.pycroInterface = pycroInterface
         self.raspiInterface = raspiInterface
         self.usingStandins = usingStandins
+        self.calibrator = Calibrator(self.pycroInterface, self.raspiInterface, self.exposureMs, usingStandins=self.usingStandins)
+
 
     def brightness_calibration_button_clicked(self):
         widgetTxt = self.exposureMsWidget.text()
@@ -232,7 +241,5 @@ class DmdCalibrationDialog(QDialog):
         self.exposureMsWidget.setEnabled(False)
         self.beginButton.setEnabled(False)
         
-        dlg = BrightnessCalibrationDialog(self.pycroInterface, self.raspiInterface, exposureFlt, self.usingStandins)
+        dlg = BrightnessCalibrationDialog(self.pycroInterface, self.raspiInterface, self.calibrator, exposureFlt, self.usingStandins)
         dlg.exec()
-    
-    # def beginCoordCalibrationButtonClicked(self):
