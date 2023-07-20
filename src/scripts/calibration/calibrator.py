@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 
 from ..constants import DmdConstants
-from ..desktop.coordtransformations import best_fit_affine_transform
+from ..utilities.coordtransformations import best_fit_affine_transform
 
 class CalibrationException(Exception):
     pass
