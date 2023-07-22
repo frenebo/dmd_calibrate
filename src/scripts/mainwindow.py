@@ -12,9 +12,9 @@ from PyQt6.QtGui import QFont
 
 from .deviceinterfaces import (
     PycroInterface,
-    StandInPycroInterface,
+    # StandInPycroInterface,
     PycroConnectionError,
-    StandInRaspiInterface,
+    # StandInRaspiInterface,
     RaspiInterface,
     RaspiConnectionError
 )
@@ -27,10 +27,10 @@ from .constants import Messages
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, workdir, useStandIns=False):
+    def __init__(self, workdir):
         super().__init__()
         self.workdir = workdir
-        self.useStandIns = useStandIns
+        # self.useStandIns = useStandIns
 
         self.setWindowTitle("Dmd Acquisition Tool")
 
@@ -93,16 +93,16 @@ class MainWindow(QMainWindow):
     
     def calibrateDmdButtonClicked(self):
         print("Calibrating dmd")
-        dmdcalibrationdialog = DmdCalibrationDialog(self.pycroInterface, self.raspiInterface, usingStandins=self.useStandIns)
+        dmdcalibrationdialog = DmdCalibrationDialog(self.pycroInterface, self.raspiInterface)
         dmdcalibrationdialog.exec()
 
         
     def pycroConnectButtonClicked(self):
         try:
-            if self.useStandIns:
-                self.pycroInterface = StandInPycroInterface()
-            else:
-                self.pycroInterface = PycroInterface()
+            # if self.useStandIns:
+            #     self.pycroInterface = StandInPycroInterface()
+            # else:
+            self.pycroInterface = PycroInterface()
             
             # if success
             self.pycroStatusLabelWidget.setText(Messages.connected_to_micro)
@@ -145,10 +145,10 @@ class MainWindow(QMainWindow):
         
         try:
             raspiworkdirpath = os.path.join(self.workdir, "raspifiles")
-            if self.useStandIns:
-                self.raspiInterface = StandInRaspiInterface(hostname, username, password, raspiworkdirpath)
-            else:
-                self.raspiInterface = RaspiInterface(hostname, username, password, raspiworkdirpath)
+            # if self.useStandIns:
+            #     self.raspiInterface = StandInRaspiInterface(hostname, username, password, raspiworkdirpath)
+            # else:
+            self.raspiInterface = RaspiInterface(hostname, username, password, raspiworkdirpath)
             
             # if success
             self.raspiStatusLabelWidget.setText(Messages.connected_to_raspi)

@@ -9,11 +9,11 @@ class CalibrationException(Exception):
 
 
 class Calibrator:
-    def __init__(self, pycroInterface, raspiInterface, cameraExposureMs, usingStandins=False):
+    def __init__(self, pycroInterface, raspiInterface, cameraExposureMs):
         self.pycroInterface = pycroInterface
         self.raspiInterface = raspiInterface
         self.cameraExposureMs = cameraExposureMs
-        self.usingStandins = usingStandins
+        # self.usingStandins = usingStandins
         
         self.dmd_dims = ( DmdConstants.DMD_H, DmdConstants.DMD_W )
         
@@ -57,8 +57,8 @@ class Calibrator:
                 solid_bright_field_dmd_pattern = np.ones(self.dmd_dims, dtype=float)
                 raspiImageSender.send_image(solid_bright_field_dmd_pattern)
                 
-                if self.usingStandins:
-                    self.pycroInterface.standin_pretend_solid_white()
+                # if self.usingStandins:
+                #     self.pycroInterface.standin_pretend_solid_white()
 
                 snapped_bright_pics = []
                 for i in range(self.number_of_solid_field_calibration_exposures):
@@ -69,8 +69,8 @@ class Calibrator:
                 solid_dark_field_dmd_pattern = np.zeros(self.dmd_dims, dtype=float)
                 raspiImageSender.send_image(solid_dark_field_dmd_pattern)
                 
-                if self.usingStandins:
-                    self.pycroInterface.standin_pretend_solid_black()
+                # if self.usingStandins:
+                #     self.pycroInterface.standin_pretend_solid_black()
 
                 snapped_dark_pics = []
                 for i in range(self.number_of_solid_field_calibration_exposures):

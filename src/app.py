@@ -9,11 +9,11 @@ from scripts.mainwindow import MainWindow
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="DMD Microscope Utility")
-    parser.add_argument(
-        "--standins",
-        default=False,
-        action="store_true",
-        help="Use pretend devices instead of hardware, for testing")
+    # parser.add_argument(
+    #     "--standins",
+    #     default=False,
+        # action="store_true",
+        # help="Use pretend devices instead of hardware, for testing")
     parser.add_argument("--tempdir", default="dmdworkdir", type=str, help="Directory to place temporary files while running")
 
     args = parser.parse_args()
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     
     app = QApplication([])
     
-    window = MainWindow(args.tempdir, useStandIns=args.standins)
+    window = MainWindow(args.tempdir)
     window.show()
 
     app.exec()
